@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Random Typeface Generator</title>
+  <style>
+    :root {
+      --bg: #f4f4f1;
+      --panel: #ffffff;
+      --ink: #111111;
+      --muted: #666666;
+      --rule: #dddddd;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 22px 24px;
+      background: var(--ink);
+      color: white;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 4vw, 38px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    header p {
+      max-width: 900px;
+      margin: 0 0 16px;
+      line-height: 1.45;
+      color: #eeeeee;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    button,
+    select,
+    input {
+      min-height: 40px;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 13px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      background: white;
+      color: var(--ink);
+    }
+
+    button:hover {
+      opacity: 0.86;
+    }
+
+    select,
+    input {
+      background: #333333;
+      color: white;
+      border: 1px solid #555555;
+    }
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #eeeeee;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      min-height: auto;
+      width: 18px;
+      height: 18px;
+      accent-color: white;
+    }
+
+    .meta {
+      font-size: 14px;
+      color: #dddddd;
+    }
+
+    main {
+      padding: 24px;
+    }
+
+    section {
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      margin: 8px 0 16px;
+      font-size: clamp(20px, 3vw, 30px);
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 8px;
+    }
+
+    .alphabet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: 16px;
+    }
+
+    .glyph-card {
+      background: var(--panel);
+      border: 1px solid var(--rule);
+      border-radius: 16px;
+      padding: 12px 10px 10px;
+      text-align: center;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+      break-inside: avoid;
+    }
+
+    canvas.glyph {
+      width: 112px;
+      height: 144px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .label {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .specimen {
+      margin: 0 0 22px;
+      background: var(--panel);
+      border: 1px solid var(--rule);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .specimen-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: flex-end;
+      margin: 8px 0;
+    }
+
+    .specimen canvas {
+      width: 52px;
+      height: 66px;
+    }
+
+    @media print {
+      header {
+        position: static;
+        box-shadow: none;
+      }
+
+      button,
+      select,
+      label {
+        display: none;
+      }
+
+      .alphabet-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+
+      body {
+        background: white;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Random Typeface Generator</h1>
+    <p>
+      Creates a complete experimental bitmap typeface every time: 26 capital letters and 26 lowercase letters.
+      The generator uses grids, simple shapes, outlines, dots and line-based strokes. There are no random white distress spots.
+    </p>
+
+    <div class="controls">
+      <button id="generateButton">Generate New Typeface</button>
+      <button id="downloadButton">Download PNG Sheet</button>
+      <button id="printButton">Print</button>
+
+      <select id="modeSelect" aria-label="Typeface mode">
+        <option value="random">Random mode</option>
+        <option value="block">Blocks / dots</option>
+        <option value="line">Lines</option>
+        <option value="hybrid">Lines + shapes</option>
+        <option value="outline">Outlines</option>
+      </select>
+
+      <label>
+        <input id="gridToggle" type="checkbox" checked />
+        Show construction grid
+      </label>
+    </div>
+
+    <div class="meta" id="meta">Output: 52 glyphs</div>
+  </header>
+
+  <main>
+    <div class="specimen">
+      <h2 style="margin-top:0">Specimen Preview</h2>
+      <div class="specimen-row" id="specimenUpper"></div>
+      <div class="specimen-row" id="specimenLower"></div>
+    </div>
+
+    <section>
+      <h2>26 Capital Letters</h2>
+      <div id="uppercase" class="alphabet-grid"></div>
+    </section>
+
+    <section>
+      <h2>26 Lowercase Letters</h2>
+      <div id="lowercase" class="alphabet-grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
+
+    // 5 x 7 construction grid. Each 1 becomes a modular part of the glyph.
+    const PATTERNS = {
+      A:["01110","10001","10001","11111","10001","10001","10001"],
+      B:["11110","10001","10001","11110","10001","10001","11110"],
+      C:["01111","10000","10000","10000","10000","10000","01111"],
+      D:["11110","10001","10001","10001","10001","10001","11110"],
+      E:["11111","10000","10000","11110","10000","10000","11111"],
+      F:["11111","10000","10000","11110","10000","10000","10000"],
+      G:["01111","10000","10000","10011","10001","10001","01111"],
+      H:["10001","10001","10001","11111","10001","10001","10001"],
+      I:["11111","00100","00100","00100","00100","00100","11111"],
+      J:["00111","00010","00010","00010","00010","10010","01100"],
+      K:["10001","10010","10100","11000","10100","10010","10001"],
+      L:["10000","10000","10000","10000","10000","10000","11111"],
+      M:["10001","11011","10101","10101","10001","10001","10001"],
+      N:["10001","11001","10101","10011","10001","10001","10001"],
+      O:["01110","10001","10001","10001","10001","10001","01110"],
+      P:["11110","10001","10001","11110","10000","10000","10000"],
+      Q:["01110","10001","10001","10001","10101","10010","01101"],
+      R:["11110","10001","10001","11110","10100","10010","10001"],
+      S:["01111","10000","10000","01110","00001","00001","11110"],
+      T:["11111","00100","00100","00100","00100","00100","00100"],
+      U:["10001","10001","10001","10001","10001","10001","01110"],
+      V:["10001","10001","10001","10001","10001","01010","00100"],
+      W:["10001","10001","10001","10101","10101","10101","01010"],
+      X:["10001","10001","01010","00100","01010","10001","10001"],
+      Y:["10001","10001","01010","00100","00100","00100","00100"],
+      Z:["11111","00001","00010","00100","01000","10000","11111"],
+
+      a:["00000","00000","01110","00001","01111","10001","01111"],
+      b:["10000","10000","10110","11001","10001","11001","10110"],
+      c:["00000","00000","01110","10000","10000","10000","01110"],
+      d:["00001","00001","01101","10011","10001","10011","01101"],
+      e:["00000","00000","01110","10001","11111","10000","01110"],
+      f:["00110","01001","01000","11100","01000","01000","01000"],
+      g:["00000","01111","10001","10001","01111","00001","01110"],
+      h:["10000","10000","10110","11001","10001","10001","10001"],
+      i:["00100","00000","01100","00100","00100","00100","01110"],
+      j:["00010","00000","00110","00010","00010","10010","01100"],
+      k:["10000","10000","10010","10100","11000","10100","10010"],
+      l:["01100","00100","00100","00100","00100","00100","01110"],
+      m:["00000","00000","11010","10101","10101","10101","10101"],
+      n:["00000","00000","10110","11001","10001","10001","10001"],
+      o:["00000","00000","01110","10001","10001","10001","01110"],
+      p:["00000","00000","11110","10001","11110","10000","10000"],
+      q:["00000","00000","01111","10001","01111","00001","00001"],
+      r:["00000","00000","10110","11001","10000","10000","10000"],
+      s:["00000","00000","01111","10000","01110","00001","11110"],
+      t:["01000","01000","11100","01000","01000","01001","00110"],
+      u:["00000","00000","10001","10001","10001","10011","01101"],
+      v:["00000","00000","10001","10001","10001","01010","00100"],
+      w:["00000","00000","10001","10001","10101","10101","01010"],
+      x:["00000","00000","10001","01010","00100","01010","10001"],
+      y:["00000","00000","10001","10001","01111","00001","01110"],
+      z:["00000","00000","11111","00010","00100","01000","11111"]
+    };
+
+    let currentSeed = Date.now();
+    let currentStyle = null;
+
+    function seededRandom(seed) {
+      return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function pick(items, random) {
+      return items[Math.floor(random() * items.length)];
+    }
+
+    function makeStyle(seed) {
+      const random = seededRandom(seed);
+      const selectedMode = document.getElementById("modeSelect").value;
+      const mode = selectedMode === "random"
+        ? pick(["block", "line", "hybrid", "outline"], random)
+        : selectedMode;
+
+      return {
+        seed,
+        mode,
+        shape: pick(["square", "rounded", "circle", "diamond", "slash"], random),
+        cellSize: 14 + Math.floor(random() * 3),
+        gap: 3 + Math.floor(random() * 3),
+        slant: Math.floor(random() * 9) - 4,
+        jitter: random() * 0.8,
+        cornerRadius: 3 + Math.floor(random() * 7),
+        serif: mode === "block" && random() > 0.7,
+        capBar: random() > 0.72,
+        showGrid: document.getElementById("gridToggle").checked,
+        lineWidth: 6 + Math.floor(random() * 6),
+        lineCap: pick(["butt", "round", "square"], random),
+        lineJoin: pick(["miter", "round", "bevel"], random),
+        nodeShape: pick(["none", "circle", "square", "diamond"], random),
+        ink: "#111111",
+        paper: "#ffffff"
+      };
+    }
+
+    function generateTypeface() {
+      currentSeed = Date.now() + Math.floor(Math.random() * 100000);
+      currentStyle = makeStyle(currentSeed);
+
+      renderSpecimen("specimenUpper", UPPERCASE);
+      renderSpecimen("specimenLower", LOWERCASE);
+      renderAlphabet("uppercase", UPPERCASE);
+      renderAlphabet("lowercase", LOWERCASE);
+
+      document.getElementById("meta").textContent =
+        `Output: 26 capitals + 26 lowercase = 52 glyphs | Mode: ${currentStyle.mode} | Shape: ${currentStyle.shape} | Seed: ${currentSeed}`;
+    }
+
+    function renderSpecimen(containerId, alphabet) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      for (const letter of alphabet) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 112;
+        canvas.height = 144;
+        canvas.className = "glyph specimen-glyph";
+        canvas.dataset.letter = letter;
+        drawGlyph(canvas, letter, currentStyle, false, false);
+        container.appendChild(canvas);
+      }
+    }
+
+    function renderAlphabet(containerId, alphabet) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      for (const letter of alphabet) {
+        const card = document.createElement("div");
+        card.className = "glyph-card";
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 224;
+        canvas.height = 288;
+        canvas.className = "glyph";
+        canvas.dataset.letter = letter;
+        drawGlyph(canvas, letter, currentStyle, true, true);
+
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = letter;
+
+        card.appendChild(canvas);
+        card.appendChild(label);
+        container.appendChild(card);
+      }
+    }
+
+    function drawGlyph(canvas, letter, style, drawBorder, drawLetterLabel) {
+      const ctx = canvas.getContext("2d");
+      const scale = canvas.width / 224;
+      const W = canvas.width;
+      const H = canvas.height;
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = style.paper;
+      ctx.fillRect(0, 0, W, H);
+
+      if (drawBorder) {
+        ctx.strokeStyle = "#dddddd";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, W - 2, H - 2);
+      }
+
+      const pattern = PATTERNS[letter];
+      const rows = pattern.length;
+      const cols = pattern[0].length;
+      const cell = style.cellSize * 2 * scale;
+      const gap = style.gap * 2 * scale;
+      const glyphWidth = cols * cell + (cols - 1) * gap;
+      const glyphHeight = rows * cell + (rows - 1) * gap;
+      const startX = (W - glyphWidth) / 2;
+      const startY = drawLetterLabel ? 32 * scale : (H - glyphHeight) / 2;
+
+      if (style.showGrid) {
+        drawGuideGrid(ctx, startX, startY, cols, rows, cell, gap);
+      }
+
+      if (drawLetterLabel) {
+        drawGuides(ctx, startX, startY, glyphWidth, cell, gap, scale);
+      }
+
+      if (style.capBar && letter === letter.toUpperCase() && drawLetterLabel) {
+        ctx.fillStyle = style.ink;
+        ctx.fillRect(startX, 14 * scale, glyphWidth, Math.max(2, 5 * scale));
+      }
+
+      if (style.mode === "line") {
+        drawLineGlyph(ctx, pattern, letter, startX, startY, cell, gap, style, scale, false);
+      } else if (style.mode === "hybrid") {
+        drawLineGlyph(ctx, pattern, letter, startX, startY, cell, gap, style, scale, true);
+      } else {
+        forEachActiveCell(pattern, (x, y) => {
+          drawCell(ctx, x, y, startX, startY, cell, gap, letter, style, scale, style.mode);
+        });
+      }
+
+      if (drawLetterLabel) {
+        ctx.fillStyle = "#111111";
+        ctx.font = `bold ${28 * scale}px Arial, Helvetica, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(letter, W / 2, H - 22 * scale);
+      }
+    }
+
+    function forEachActiveCell(pattern, callback) {
+      for (let y = 0; y < pattern.length; y++) {
+        for (let x = 0; x < pattern[y].length; x++) {
+          if (pattern[y][x] === "1") callback(x, y);
+        }
+      }
+    }
+
+    function isActive(pattern, x, y) {
+      if (y < 0 || y >= pattern.length) return false;
+      if (x < 0 || x >= pattern[y].length) return false;
+      return pattern[y][x] === "1";
+    }
+
+    function cellCenter(x, y, startX, startY, cell, gap, style, scale) {
+      return {
+        x: startX + x * (cell + gap) + y * style.slant * scale + cell / 2,
+        y: startY + y * (cell + gap) + cell / 2
+      };
+    }
+
+    function drawLineGlyph(ctx, pattern, letter, startX, startY, cell, gap, style, scale, drawNodes) {
+      ctx.save();
+      ctx.strokeStyle = style.ink;
+      ctx.lineWidth = style.lineWidth * scale;
+      ctx.lineCap = style.lineCap;
+      ctx.lineJoin = style.lineJoin;
+
+      // Connect active cells into line strokes. Right, down, and diagonal connections keep the letters readable.
+      forEachActiveCell(pattern, (x, y) => {
+        const from = cellCenter(x, y, startX, startY, cell, gap, style, scale);
+        const neighbours = [
+          [x + 1, y],
+          [x, y + 1],
+          [x + 1, y + 1],
+          [x - 1, y + 1]
+        ];
+
+        neighbours.forEach(([nx, ny]) => {
+          if (isActive(pattern, nx, ny)) {
+            const to = cellCenter(nx, ny, startX, startY, cell, gap, style, scale);
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+          }
+        });
+      });
+
+      // Mark isolated cells so dots and punctuation-like parts do not disappear.
+      forEachActiveCell(pattern, (x, y) => {
+        const neighbourCount = [
+          isActive(pattern, x + 1, y),
+          isActive(pattern, x - 1, y),
+          isActive(pattern, x, y + 1),
+          isActive(pattern, x, y - 1),
+          isActive(pattern, x + 1, y + 1),
+          isActive(pattern, x - 1, y + 1),
+          isActive(pattern, x + 1, y - 1),
+          isActive(pattern, x - 1, y - 1)
+        ].filter(Boolean).length;
+
+        const c = cellCenter(x, y, startX, startY, cell, gap, style, scale);
+        if (neighbourCount === 0 || drawNodes) {
+          drawNode(ctx, c.x, c.y, cell, style, scale);
+        }
+      });
+
+      ctx.restore();
+    }
+
+    function drawNode(ctx, cx, cy, cell, style, scale) {
+      if (style.nodeShape === "none") return;
+
+      const size = Math.max(4 * scale, cell * 0.38);
+      ctx.save();
+      ctx.fillStyle = style.ink;
+
+      if (style.nodeShape === "circle") {
+        ctx.beginPath();
+        ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (style.nodeShape === "square") {
+        ctx.fillRect(cx - size / 2, cy - size / 2, size, size);
+      }
+
+      if (style.nodeShape === "diamond") {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - size / 2);
+        ctx.lineTo(cx + size / 2, cy);
+        ctx.lineTo(cx, cy + size / 2);
+        ctx.lineTo(cx - size / 2, cy);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawCell(ctx, x, y, startX, startY, cell, gap, letter, style, scale, mode) {
+      const cellSeed = style.seed + letter.charCodeAt(0) * 131 + x * 17 + y * 29;
+      const random = seededRandom(cellSeed);
+      const jitterX = (random() - 0.5) * style.jitter * 2 * scale;
+      const jitterY = (random() - 0.5) * style.jitter * 2 * scale;
+      const px = startX + x * (cell + gap) + y * style.slant * scale + jitterX;
+      const py = startY + y * (cell + gap) + jitterY;
+
+      ctx.save();
+      ctx.fillStyle = style.ink;
+      ctx.strokeStyle = style.ink;
+      ctx.lineWidth = Math.max(2, style.lineWidth * 0.65 * scale);
+      ctx.lineCap = style.lineCap;
+      ctx.lineJoin = style.lineJoin;
+
+      if (mode === "outline") {
+        if (style.shape === "circle") {
+          ctx.beginPath();
+          ctx.arc(px + cell / 2, py + cell / 2, cell / 2, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (style.shape === "diamond") {
+          ctx.beginPath();
+          ctx.moveTo(px + cell / 2, py);
+          ctx.lineTo(px + cell, py + cell / 2);
+          ctx.lineTo(px + cell / 2, py + cell);
+          ctx.lineTo(px, py + cell / 2);
+          ctx.closePath();
+          ctx.stroke();
+        } else {
+          roundRect(ctx, px, py, cell, cell, style.shape === "rounded" ? style.cornerRadius * scale : 0);
+          ctx.stroke();
+        }
+        ctx.restore();
+        return;
+      }
+
+      if (style.shape === "square") {
+        ctx.fillRect(px, py, cell, cell);
+      }
+
+      if (style.shape === "rounded") {
+        roundRect(ctx, px, py, cell, cell, style.cornerRadius * scale);
+        ctx.fill();
+      }
+
+      if (style.shape === "circle") {
+        ctx.beginPath();
+        ctx.arc(px + cell / 2, py + cell / 2, cell / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (style.shape === "diamond") {
+        ctx.beginPath();
+        ctx.moveTo(px + cell / 2, py);
+        ctx.lineTo(px + cell, py + cell / 2);
+        ctx.lineTo(px + cell / 2, py + cell);
+        ctx.lineTo(px, py + cell / 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if (style.shape === "slash") {
+        ctx.beginPath();
+        ctx.moveTo(px + cell * 0.25, py);
+        ctx.lineTo(px + cell, py);
+        ctx.lineTo(px + cell * 0.75, py + cell);
+        ctx.lineTo(px, py + cell);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if (style.serif) {
+        drawSerif(ctx, px, py, cell, random);
+      }
+
+      ctx.restore();
+    }
+
+    function drawGuideGrid(ctx, startX, startY, cols, rows, cell, gap) {
+      ctx.save();
+      ctx.strokeStyle = "#eeeeee";
+      ctx.lineWidth = 1;
+
+      for (let y = 0; y <= rows; y++) {
+        const yy = startY + y * (cell + gap) - gap / 2;
+        ctx.beginPath();
+        ctx.moveTo(startX - 7, yy);
+        ctx.lineTo(startX + cols * (cell + gap), yy);
+        ctx.stroke();
+      }
+
+      for (let x = 0; x <= cols; x++) {
+        const xx = startX + x * (cell + gap) - gap / 2;
+        ctx.beginPath();
+        ctx.moveTo(xx, startY - 7);
+        ctx.lineTo(xx, startY + rows * (cell + gap));
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawGuides(ctx, startX, startY, glyphWidth, cell, gap, scale) {
+      ctx.save();
+      ctx.strokeStyle = "#d4d4d4";
+      ctx.lineWidth = 1;
+
+      const guideLines = [
+        startY,
+        startY + 2 * (cell + gap),
+        startY + 6 * (cell + gap)
+      ];
+
+      guideLines.forEach((yy) => {
+        ctx.beginPath();
+        ctx.moveTo(startX - 10 * scale, yy);
+        ctx.lineTo(startX + glyphWidth + 10 * scale, yy);
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
+
+    function drawSerif(ctx, px, py, cell, random) {
+      const s = cell * 0.22;
+      ctx.fillStyle = "#111111";
+      if (random() > 0.5) ctx.fillRect(px - s * 0.4, py, s, s);
+      if (random() > 0.5) ctx.fillRect(px + cell - s * 0.6, py, s, s);
+      if (random() > 0.5) ctx.fillRect(px - s * 0.4, py + cell - s, s, s);
+      if (random() > 0.5) ctx.fillRect(px + cell - s * 0.6, py + cell - s, s, s);
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + width - r, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+      ctx.lineTo(x + width, y + height - r);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      ctx.lineTo(x + r, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function downloadPNG() {
+      const letters = UPPERCASE + LOWERCASE;
+      const cardW = 224;
+      const cardH = 288;
+      const columns = 8;
+      const rows = Math.ceil(letters.length / columns);
+      const padding = 50;
+      const titleH = 90;
+
+      const sheet = document.createElement("canvas");
+      sheet.width = padding * 2 + columns * cardW;
+      sheet.height = padding * 2 + titleH + rows * cardH;
+      const ctx = sheet.getContext("2d");
+
+      ctx.fillStyle = "#f4f4f1";
+      ctx.fillRect(0, 0, sheet.width, sheet.height);
+
+      ctx.fillStyle = "#111111";
+      ctx.font = "bold 42px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("Random Typeface Generator", padding, padding + 42);
+      ctx.font = "22px Arial, Helvetica, sans-serif";
+      ctx.fillText(`52 glyphs: A-Z and a-z | Mode: ${currentStyle.mode} | Seed: ${currentSeed}`, padding, padding + 76);
+
+      for (let i = 0; i < letters.length; i++) {
+        const temp = document.createElement("canvas");
+        temp.width = cardW;
+        temp.height = cardH;
+        drawGlyph(temp, letters[i], currentStyle, true, true);
+
+        const col = i % columns;
+        const row = Math.floor(i / columns);
+        const x = padding + col * cardW;
+        const y = padding + titleH + row * cardH;
+        ctx.drawImage(temp, x, y);
+      }
+
+      const link = document.createElement("a");
+      link.download = `random-typeface-${currentSeed}.png`;
+      link.href = sheet.toDataURL("image/png");
+      link.click();
+    }
+
+    document.getElementById("generateButton").addEventListener("click", generateTypeface);
+    document.getElementById("downloadButton").addEventListener("click", downloadPNG);
+    document.getElementById("printButton").addEventListener("click", () => window.print());
+    document.getElementById("modeSelect").addEventListener("change", generateTypeface);
+    document.getElementById("gridToggle").addEventListener("change", generateTypeface);
+
+    generateTypeface();
+  </script>
+</body>
+</html>
