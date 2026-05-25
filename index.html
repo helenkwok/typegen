@@ -596,10 +596,12 @@
       showGrid: true,
       allCaps: true,
       invert: false,
-      variant: 0
+      variant: 0,
+      genStyle: null
     };
 
     const presetNames = {
+      generated: "Random generated (from brief)",
       bayer: "Bayer 1925 (circle + bar)",
       vandoesburg: "Van Doesburg 1919 (rectilinear)",
       avant: "Avant-garde modules",
@@ -631,9 +633,22 @@
         state.resolvedPreset = selected;
         return;
       }
-      const rand = seededRandom(state.seed);
-      const options = ["bayer", "vandoesburg", "avant", "bauhaus", "cash", "led", "line", "hybrid"];
-      state.resolvedPreset = options[Math.floor(rand() * options.length)];
+      // "Random from brief" is genuinely generative: build a fresh geometric
+      // typeface style from the seed instead of just picking a fixed preset.
+      state.resolvedPreset = "generated";
+      state.genStyle = buildGenStyle(state.seed);
+    }
+
+    // Seeded set of construction parameters for a generated geometric typeface.
+    // rounding 0 = rectilinear (Van Doesburg) ... 0.5 = fully rounded (Bayer).
+    function buildGenStyle(seed) {
+      const rand = seededRandom(seed + 7777);
+      const pick = arr => arr[Math.floor(rand() * arr.length)];
+      return {
+        rounding: pick([0, 0, 0.15, 0.3, 0.5, 0.5]),   // mostly block, sometimes rounded
+        family: pick(["block", "block", "block", "dots"]), // mostly solid, sometimes LED dots
+        accentEvery: pick([0, 0, 5, 7, 11])             // 0 = single colour, else every Nth cell
+      };
     }
 
     function syncStateFromControls(newSeed) {
@@ -802,6 +817,7 @@
           if (preset === "avant") drawAvantModule(ctx, px, py, cell, ink, accent, index, rand);
           if (preset === "vandoesburg") drawVanDoesburgModule(ctx, px, py, cell, ink, accent, pattern, cx, cy);
           if (preset === "bayer") drawBayerModule(ctx, px, py, cell, ink, accent, pattern, cx, cy);
+          if (preset === "generated") drawGeneratedModule(ctx, px, py, cell, ink, accent, pattern, cx, cy, index);
         });
       }
 
@@ -861,6 +877,34 @@
         l: isActive(pattern, cx - 1, cy), r: isActive(pattern, cx + 1, cy)
       };
       fillRoundedCell(ctx, x, y, cell, ink, nb, { tl: 0, tr: 0, br: 0, bl: 0 });
+    }
+
+    // Generated typeface: one coherent geometric face per seed, using the style
+    // parameters in state.genStyle (corner rounding, family, two-colour accent rule).
+    function drawGeneratedModule(ctx, x, y, cell, ink, accent, pattern, cx, cy, index) {
+      const g = state.genStyle || { rounding: 0.3, family: "block", accentEvery: 0 };
+      const color = (g.accentEvery && index % g.accentEvery === 0) ? accent : ink;
+
+      if (g.family === "dots") {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x + cell / 2, y + cell / 2, cell * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+
+      const t = isActive(pattern, cx, cy - 1), b = isActive(pattern, cx, cy + 1);
+      const l = isActive(pattern, cx - 1, cy), r = isActive(pattern, cx + 1, cy);
+      const R = g.rounding * cell;
+      const rad = {
+        tl: (!t && !l) ? R : 0,
+        tr: (!t && !r) ? R : 0,
+        br: (!b && !r) ? R : 0,
+        bl: (!b && !l) ? R : 0
+      };
+      fillRoundedCell(ctx, x, y, cell, color, { t, b, l, r }, rad);
     }
 
     // Herbert Bayer "universal", 1925: geometric circle + bar. Solid blocks with
@@ -1126,8 +1170,14 @@
 
     function updateMeta() {
       const gridNote = Math.abs(CELL_MM - 5.5) < 0.01 ? " (matches GridA4)" : "";
+      let genTag = "";
+      if (state.resolvedPreset === "generated" && state.genStyle) {
+        const g = state.genStyle;
+        const shape = g.family === "dots" ? "LED dots" : (g.rounding >= 0.4 ? "rounded" : g.rounding <= 0.05 ? "rectilinear" : "soft corners");
+        genTag = ` [${shape}${g.accentEvery ? ", 2-colour" : ""}]`;
+      }
       document.getElementById("meta").textContent =
-        `52 glyphs (A-Z + a-z) | ${presetNames[state.resolvedPreset]} | cell ${CELL_MM} mm${gridNote} | tracking ${state.tracking} | seed ${state.seed} | use Print for true-size tracing sheets`;
+        `52 glyphs (A-Z + a-z) | ${presetNames[state.resolvedPreset]}${genTag} | cell ${CELL_MM} mm${gridNote} | tracking ${state.tracking} | seed ${state.seed} | press Generate for a new random typeface`;
     }
 
     function renderAll(newSeed = false) {
