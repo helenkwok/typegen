@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Random Typeface Generator</title>
+  <title>Experimental Geometric Typeface Tool</title>
   <style>
     :root {
-      --bg: #f4f4f1;
+      --bg: #f3f1ec;
       --panel: #ffffff;
-      --ink: #111111;
+      --ink: #101010;
       --muted: #666666;
-      --rule: #dddddd;
+      --line: #d8d2c9;
+      --accent: #e60046;
+      --soft: #f8f6f1;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -28,133 +28,208 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      padding: 22px 24px;
       background: var(--ink);
       color: white;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+      padding: 22px 24px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.22);
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(24px, 4vw, 38px);
-      line-height: 1;
-      letter-spacing: -0.04em;
+      margin: 0 0 7px;
+      font-size: clamp(25px, 4.2vw, 46px);
+      line-height: .95;
+      letter-spacing: -.055em;
     }
 
     header p {
-      max-width: 900px;
       margin: 0 0 16px;
-      line-height: 1.45;
+      max-width: 1100px;
       color: #eeeeee;
+      line-height: 1.42;
     }
 
     .controls {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: 10px;
-      align-items: center;
-      margin-bottom: 12px;
+      align-items: end;
     }
 
-    button,
-    select,
-    input {
-      min-height: 40px;
-      border: 0;
-      border-radius: 10px;
-      padding: 10px 13px;
+    .control { grid-column: span 2; }
+    .control.wide { grid-column: span 4; }
+    .control.small { grid-column: span 1; }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 12px;
+      color: #dddddd;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    input, select, button, textarea {
       font: inherit;
+      border: 1px solid #555555;
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-height: 42px;
+    }
+
+    input, select, textarea {
+      background: #2b2b2b;
+      color: white;
+    }
+
+    input[type="color"] {
+      padding: 4px;
+      min-height: 42px;
+      cursor: pointer;
+    }
+
+    input[type="range"] { padding: 0; }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      min-height: auto;
+      accent-color: white;
+    }
+
+    .inline-check {
+      flex-direction: row;
+      align-items: center;
+      min-height: 42px;
+      padding-top: 16px;
     }
 
     button {
+      border: 0;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 800;
       background: white;
       color: var(--ink);
     }
 
-    button:hover {
-      opacity: 0.86;
-    }
+    button:hover { opacity: .86; }
 
-    select,
-    input {
-      background: #333333;
-      color: white;
-      border: 1px solid #555555;
-    }
-
-    label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: #eeeeee;
-      font-size: 14px;
-    }
-
-    input[type="checkbox"] {
-      min-height: auto;
-      width: 18px;
-      height: 18px;
-      accent-color: white;
-    }
+    .accent-btn { background: var(--accent); color: white; }
 
     .meta {
-      font-size: 14px;
-      color: #dddddd;
+      margin-top: 12px;
+      color: #d6d6d6;
+      font-size: 13px;
+      line-height: 1.35;
     }
 
-    main {
-      padding: 24px;
+    main { padding: 24px; }
+
+    section { margin: 0 0 34px; }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.07);
     }
 
-    section {
-      margin-bottom: 40px;
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(280px, .9fr);
+      gap: 18px;
+      align-items: stretch;
     }
 
     h2 {
-      margin: 8px 0 16px;
+      margin: 0 0 14px;
       font-size: clamp(20px, 3vw, 30px);
-      border-bottom: 2px solid var(--ink);
-      padding-bottom: 8px;
+      line-height: 1;
+      letter-spacing: -.025em;
     }
 
-    .alphabet-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-      gap: 16px;
+    h3 {
+      margin: 18px 0 8px;
+      font-size: 16px;
     }
 
-    .glyph-card {
-      background: var(--panel);
-      border: 1px solid var(--rule);
+    .preview-wrap {
+      background: var(--soft);
+      border: 1px solid var(--line);
       border-radius: 16px;
-      padding: 12px 10px 10px;
-      text-align: center;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-      break-inside: avoid;
+      padding: 12px;
+      overflow: hidden;
     }
 
-    canvas.glyph {
-      width: 112px;
-      height: 144px;
+    #conferenceCanvas {
       display: block;
-      margin: 0 auto;
+      width: 100%;
+      height: auto;
+      background: white;
+      border-radius: 12px;
     }
 
-    .label {
-      margin-top: 6px;
-      font-size: 13px;
+    .notes {
       color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: #333333;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .tick {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: white;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .tool-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .swatches {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .swatch {
+      width: 42px;
+      height: 24px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,.18);
     }
 
     .specimen {
-      margin: 0 0 22px;
-      background: var(--panel);
-      border: 1px solid var(--rule);
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+      display: grid;
+      gap: 14px;
     }
 
     .specimen-row {
@@ -162,79 +237,233 @@
       flex-wrap: wrap;
       gap: 7px;
       align-items: flex-end;
-      margin: 8px 0;
     }
 
-    .specimen canvas {
-      width: 52px;
-      height: 66px;
+    .specimen-row canvas {
+      width: 48px;
+      height: 62px;
+      background: white;
+      border: 1px solid #e6e1d8;
+      border-radius: 8px;
+    }
+
+    .alphabet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: 15px;
+    }
+
+    .glyph-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 11px 10px 9px;
+      text-align: center;
+      box-shadow: 0 3px 12px rgba(0,0,0,.06);
+      break-inside: avoid;
+    }
+
+    .glyph-card canvas {
+      width: 112px;
+      height: 144px;
+      display: block;
+      margin: 0 auto;
+      background: white;
+      border-radius: 9px;
+    }
+
+    .glyph-label {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      resize: vertical;
+      background: #111;
+      color: white;
+      border-color: #333;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 1050px) {
+      .control, .control.small { grid-column: span 3; }
+      .control.wide { grid-column: span 6; }
+      .hero-grid, .split { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      header { position: static; }
+      .controls { grid-template-columns: repeat(2, 1fr); }
+      .control, .control.wide, .control.small { grid-column: span 2; }
+      main { padding: 14px; }
     }
 
     @media print {
-      header {
-        position: static;
-        box-shadow: none;
-      }
-
-      button,
-      select,
-      label {
-        display: none;
-      }
-
-      .alphabet-grid {
-        grid-template-columns: repeat(6, 1fr);
-      }
-
-      body {
-        background: white;
-      }
+      header { position: static; box-shadow: none; }
+      button, select, input, label, textarea { display: none !important; }
+      body { background: white; }
+      .panel, .glyph-card { box-shadow: none; }
+      .alphabet-grid { grid-template-columns: repeat(6, 1fr); }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Random Typeface Generator</h1>
+    <h1>Experimental Geometric Typeface Tool</h1>
     <p>
-      Creates a complete experimental bitmap typeface every time: 26 capital letters and 26 lowercase letters.
-      The generator uses grids, simple shapes, outlines, dots and line-based strokes. There are no random white distress spots.
+      Build a custom display typeface for any word, phrase, heading, label, poster title, signage text or event name using modular geometry, 1910s/1920s avant-garde influence,
+      cash-register logic and LED/digital signage construction. The tool still outputs all 52 glyphs: A–Z and a–z.
     </p>
 
     <div class="controls">
-      <button id="generateButton">Generate New Typeface</button>
-      <button id="downloadButton">Download PNG Sheet</button>
-      <button id="printButton">Print</button>
+      <div class="control wide">
+        <label>Display text
+          <input id="conferenceInput" value="TYPE ANYTHING" maxlength="120" />
+        </label>
+      </div>
 
-      <select id="modeSelect" aria-label="Typeface mode">
-        <option value="random">Random mode</option>
-        <option value="block">Blocks / dots</option>
-        <option value="line">Lines</option>
-        <option value="hybrid">Lines + shapes</option>
-        <option value="outline">Outlines</option>
-      </select>
+      <div class="control">
+        <label>Typeface direction
+          <select id="presetSelect">
+            <option value="random">Random from brief</option>
+            <option value="avant">Avant-garde modules</option>
+            <option value="bauhaus">Bauhaus circle/triangle</option>
+            <option value="cash">Cash register outline</option>
+            <option value="led">LED dot matrix</option>
+            <option value="line">Linear construction</option>
+            <option value="hybrid">Hybrid shapes + lines</option>
+          </select>
+        </label>
+      </div>
 
-      <label>
-        <input id="gridToggle" type="checkbox" checked />
-        Show construction grid
-      </label>
+      <div class="control small">
+        <label>Accent
+          <input id="accentInput" type="color" value="#e60046" />
+        </label>
+      </div>
+
+      <div class="control small">
+        <label>Tracking
+          <input id="trackingInput" type="range" min="-12" max="32" value="8" />
+        </label>
+      </div>
+
+      <div class="control small">
+        <label>Stroke
+          <input id="strokeInput" type="range" min="3" max="18" value="9" />
+        </label>
+      </div>
+
+      <div class="control small">
+        <label>Seed
+          <input id="seedInput" type="number" value="2026" />
+        </label>
+      </div>
+
+      <div class="control small">
+        <label class="inline-check">
+          <input id="gridToggle" type="checkbox" checked /> Grid
+        </label>
+      </div>
+
+      <div class="control small">
+        <label class="inline-check">
+          <input id="upperToggle" type="checkbox" checked /> All caps
+        </label>
+      </div>
+
+      <div class="control small">
+        <label class="inline-check">
+          <input id="invertToggle" type="checkbox" /> Reverse
+        </label>
+      </div>
+
+      <div class="control">
+        <button id="generateButton" class="accent-btn">Generate</button>
+      </div>
+
+      <div class="control">
+        <button id="downloadWordButton">Download text PNG</button>
+      </div>
+
+      <div class="control">
+        <button id="downloadAlphabetButton">Download alphabet PNG</button>
+      </div>
     </div>
 
-    <div class="meta" id="meta">Output: 52 glyphs</div>
+    <div class="meta" id="meta">Ready.</div>
   </header>
 
   <main>
-    <div class="specimen">
-      <h2 style="margin-top:0">Specimen Preview</h2>
+    <section class="hero-grid">
+      <div class="panel">
+        <h2>Custom Text Display</h2>
+        <div class="preview-wrap">
+          <canvas id="conferenceCanvas" width="1800" height="720"></canvas>
+        </div>
+        <div class="tool-row">
+          <button id="printButton">Print</button>
+          <button id="downloadSpecimenButton">Download full specimen PNG</button>
+        </div>
+        <div class="swatches">
+          <span>Two-colour preview:</span>
+          <span class="swatch" id="blackSwatch" style="background:#111"></span>
+          <span class="swatch" id="accentSwatch" style="background:#e60046"></span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Design Fit</h2>
+        <p class="notes">
+          This version is not limited to a conference name. Use it to test any display text while keeping the construction geometric,
+          modular and suitable for a typographic poster, brochure, logo, heading or signage system.
+        </p>
+        <div class="checklist">
+          <div class="check"><span class="tick">✓</span><span>Always creates 26 capitals and 26 lowercase letters.</span></div>
+          <div class="check"><span class="tick">✓</span><span>Includes simple geometric modules: squares, circles, triangles, arcs, outlines and lines.</span></div>
+          <div class="check"><span class="tick">✓</span><span>Includes cash-register, LED matrix and line-based construction modes.</span></div>
+          <div class="check"><span class="tick">✓</span><span>Uses black plus one accent colour so the preview can match a two-colour poster direction.</span></div>
+          <div class="check"><span class="tick">✓</span><span>Shows grid, baseline, cap height and x-height guides for design refinement.</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel specimen">
+      <h2>Quick Specimen Preview</h2>
       <div class="specimen-row" id="specimenUpper"></div>
       <div class="specimen-row" id="specimenLower"></div>
-    </div>
+    </section>
 
-    <section>
+    <section class="split">
+      <div class="panel">
+        <h2>Design Rationale Notes</h2>
+        <textarea id="rationaleText" readonly></textarea>
+      </div>
+      <div class="panel">
+        <h2>How to Use This for Your Project</h2>
+        <p class="notes">
+          Generate several directions, download the custom text PNG, then refine the best idea manually in Illustrator.
+          Look for repeated logic: same stroke weight, same counters, same grid, same accent rule, and consistent spacing.
+          Treat this as concept generation, not the final font file.
+        </p>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>26 Capital Letters</h2>
       <div id="uppercase" class="alphabet-grid"></div>
     </section>
 
-    <section>
+    <section class="panel">
       <h2>26 Lowercase Letters</h2>
       <div id="lowercase" class="alphabet-grid"></div>
     </section>
@@ -244,7 +473,6 @@
     const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
 
-    // 5 x 7 construction grid. Each 1 becomes a modular part of the glyph.
     const PATTERNS = {
       A:["01110","10001","10001","11111","10001","10001","10001"],
       B:["11110","10001","10001","11110","10001","10001","11110"],
@@ -301,8 +529,29 @@
       z:["00000","00000","11111","00010","00100","01000","11111"]
     };
 
-    let currentSeed = Date.now();
-    let currentStyle = null;
+    const state = {
+      seed: 2026,
+      preset: "random",
+      resolvedPreset: "avant",
+      accent: "#e60046",
+      ink: "#111111",
+      paper: "#ffffff",
+      tracking: 8,
+      stroke: 9,
+      showGrid: true,
+      allCaps: true,
+      invert: false,
+      variant: 0
+    };
+
+    const presetNames = {
+      avant: "Avant-garde modules",
+      bauhaus: "Bauhaus circle/triangle",
+      cash: "Cash register outline",
+      led: "LED dot matrix",
+      line: "Linear construction",
+      hybrid: "Hybrid shapes + lines"
+    };
 
     function seededRandom(seed) {
       return function() {
@@ -314,146 +563,44 @@
       };
     }
 
-    function pick(items, random) {
-      return items[Math.floor(random() * items.length)];
+    function randomInt(min, max, rand) {
+      return Math.floor(rand() * (max - min + 1)) + min;
     }
 
-    function makeStyle(seed) {
-      const random = seededRandom(seed);
-      const selectedMode = document.getElementById("modeSelect").value;
-      const mode = selectedMode === "random"
-        ? pick(["block", "line", "hybrid", "outline"], random)
-        : selectedMode;
-
-      return {
-        seed,
-        mode,
-        shape: pick(["square", "rounded", "circle", "diamond", "slash"], random),
-        cellSize: 14 + Math.floor(random() * 3),
-        gap: 3 + Math.floor(random() * 3),
-        slant: Math.floor(random() * 9) - 4,
-        jitter: random() * 0.8,
-        cornerRadius: 3 + Math.floor(random() * 7),
-        serif: mode === "block" && random() > 0.7,
-        capBar: random() > 0.72,
-        showGrid: document.getElementById("gridToggle").checked,
-        lineWidth: 6 + Math.floor(random() * 6),
-        lineCap: pick(["butt", "round", "square"], random),
-        lineJoin: pick(["miter", "round", "bevel"], random),
-        nodeShape: pick(["none", "circle", "square", "diamond"], random),
-        ink: "#111111",
-        paper: "#ffffff"
-      };
+    function resolvePreset() {
+      const selected = document.getElementById("presetSelect").value;
+      state.preset = selected;
+      if (selected !== "random") {
+        state.resolvedPreset = selected;
+        return;
+      }
+      const rand = seededRandom(state.seed);
+      const options = ["avant", "bauhaus", "cash", "led", "line", "hybrid"];
+      state.resolvedPreset = options[Math.floor(rand() * options.length)];
     }
 
-    function generateTypeface() {
-      currentSeed = Date.now() + Math.floor(Math.random() * 100000);
-      currentStyle = makeStyle(currentSeed);
-
-      renderSpecimen("specimenUpper", UPPERCASE);
-      renderSpecimen("specimenLower", LOWERCASE);
-      renderAlphabet("uppercase", UPPERCASE);
-      renderAlphabet("lowercase", LOWERCASE);
-
-      document.getElementById("meta").textContent =
-        `Output: 26 capitals + 26 lowercase = 52 glyphs | Mode: ${currentStyle.mode} | Shape: ${currentStyle.shape} | Seed: ${currentSeed}`;
+    function syncStateFromControls(newSeed) {
+      if (newSeed) {
+        const nextSeed = Date.now() + Math.floor(Math.random() * 99999);
+        document.getElementById("seedInput").value = nextSeed;
+      }
+      state.seed = Number(document.getElementById("seedInput").value) || 2026;
+      state.accent = document.getElementById("accentInput").value || "#e60046";
+      state.tracking = Number(document.getElementById("trackingInput").value);
+      state.stroke = Number(document.getElementById("strokeInput").value);
+      state.showGrid = document.getElementById("gridToggle").checked;
+      state.allCaps = document.getElementById("upperToggle").checked;
+      state.invert = document.getElementById("invertToggle").checked;
+      const rand = seededRandom(state.seed + 9001);
+      state.variant = randomInt(0, 9999, rand);
+      resolvePreset();
+      document.documentElement.style.setProperty("--accent", state.accent);
+      document.getElementById("accentSwatch").style.background = state.accent;
     }
 
-    function renderSpecimen(containerId, alphabet) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
-      for (const letter of alphabet) {
-        const canvas = document.createElement("canvas");
-        canvas.width = 112;
-        canvas.height = 144;
-        canvas.className = "glyph specimen-glyph";
-        canvas.dataset.letter = letter;
-        drawGlyph(canvas, letter, currentStyle, false, false);
-        container.appendChild(canvas);
-      }
-    }
-
-    function renderAlphabet(containerId, alphabet) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
-
-      for (const letter of alphabet) {
-        const card = document.createElement("div");
-        card.className = "glyph-card";
-
-        const canvas = document.createElement("canvas");
-        canvas.width = 224;
-        canvas.height = 288;
-        canvas.className = "glyph";
-        canvas.dataset.letter = letter;
-        drawGlyph(canvas, letter, currentStyle, true, true);
-
-        const label = document.createElement("div");
-        label.className = "label";
-        label.textContent = letter;
-
-        card.appendChild(canvas);
-        card.appendChild(label);
-        container.appendChild(card);
-      }
-    }
-
-    function drawGlyph(canvas, letter, style, drawBorder, drawLetterLabel) {
-      const ctx = canvas.getContext("2d");
-      const scale = canvas.width / 224;
-      const W = canvas.width;
-      const H = canvas.height;
-
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = style.paper;
-      ctx.fillRect(0, 0, W, H);
-
-      if (drawBorder) {
-        ctx.strokeStyle = "#dddddd";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(1, 1, W - 2, H - 2);
-      }
-
-      const pattern = PATTERNS[letter];
-      const rows = pattern.length;
-      const cols = pattern[0].length;
-      const cell = style.cellSize * 2 * scale;
-      const gap = style.gap * 2 * scale;
-      const glyphWidth = cols * cell + (cols - 1) * gap;
-      const glyphHeight = rows * cell + (rows - 1) * gap;
-      const startX = (W - glyphWidth) / 2;
-      const startY = drawLetterLabel ? 32 * scale : (H - glyphHeight) / 2;
-
-      if (style.showGrid) {
-        drawGuideGrid(ctx, startX, startY, cols, rows, cell, gap);
-      }
-
-      if (drawLetterLabel) {
-        drawGuides(ctx, startX, startY, glyphWidth, cell, gap, scale);
-      }
-
-      if (style.capBar && letter === letter.toUpperCase() && drawLetterLabel) {
-        ctx.fillStyle = style.ink;
-        ctx.fillRect(startX, 14 * scale, glyphWidth, Math.max(2, 5 * scale));
-      }
-
-      if (style.mode === "line") {
-        drawLineGlyph(ctx, pattern, letter, startX, startY, cell, gap, style, scale, false);
-      } else if (style.mode === "hybrid") {
-        drawLineGlyph(ctx, pattern, letter, startX, startY, cell, gap, style, scale, true);
-      } else {
-        forEachActiveCell(pattern, (x, y) => {
-          drawCell(ctx, x, y, startX, startY, cell, gap, letter, style, scale, style.mode);
-        });
-      }
-
-      if (drawLetterLabel) {
-        ctx.fillStyle = "#111111";
-        ctx.font = `bold ${28 * scale}px Arial, Helvetica, sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "alphabetic";
-        ctx.fillText(letter, W / 2, H - 22 * scale);
-      }
+    function getDisplayName() {
+      const raw = document.getElementById("conferenceInput").value.trim() || "TYPE ANYTHING";
+      return state.allCaps ? raw.toUpperCase() : raw;
     }
 
     function forEachActiveCell(pattern, callback) {
@@ -470,33 +617,307 @@
       return pattern[y][x] === "1";
     }
 
-    function cellCenter(x, y, startX, startY, cell, gap, style, scale) {
-      return {
-        x: startX + x * (cell + gap) + y * style.slant * scale + cell / 2,
-        y: startY + y * (cell + gap) + cell / 2
-      };
+    function linePatternWidth(text, cell, gap, tracking) {
+      let width = 0;
+      [...text].forEach(ch => {
+        if (ch === " ") width += cell * 3.2;
+        else width += 5 * cell + 4 * gap + tracking;
+      });
+      return Math.max(0, width - tracking);
     }
 
-    function drawLineGlyph(ctx, pattern, letter, startX, startY, cell, gap, style, scale, drawNodes) {
+    function wrapText(text, maxCells) {
+      const words = text.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let line = "";
+
+      words.forEach(word => {
+        const test = line ? line + " " + word : word;
+        if (test.length > maxCells && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = test;
+        }
+      });
+      if (line) lines.push(line);
+      return lines.length ? lines : [text];
+    }
+
+    function drawConferencePreview() {
+      const canvas = document.getElementById("conferenceCanvas");
+      const ctx = canvas.getContext("2d");
+      const text = getDisplayName();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const bg = state.invert ? state.ink : state.paper;
+      const fg = state.invert ? state.paper : state.ink;
+      const gridCol = state.invert ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const roughMax = Math.max(10, Math.floor(34 - Math.max(0, text.length - 12) * .35));
+      const lines = wrapText(text, roughMax);
+      const marginX = 86;
+      const marginY = 90;
+      const gapRatio = .18;
+      const tracking = state.tracking;
+      let cell = 58;
+
+      for (let i = 0; i < 20; i++) {
+        const gap = cell * gapRatio;
+        const longest = Math.max(...lines.map(line => linePatternWidth(line, cell, gap, tracking)));
+        const totalHeight = lines.length * (7 * cell + 6 * gap) + (lines.length - 1) * cell * 1.35;
+        const fitW = (canvas.width - marginX * 2) / longest;
+        const fitH = (canvas.height - marginY * 2) / totalHeight;
+        const scale = Math.min(1, fitW, fitH);
+        if (scale >= .995) break;
+        cell *= scale;
+      }
+
+      const gap = cell * gapRatio;
+      const glyphH = 7 * cell + 6 * gap;
+      const lineH = glyphH + cell * 1.35;
+      const totalH = lines.length * glyphH + (lines.length - 1) * cell * 1.35;
+      let y = (canvas.height - totalH) / 2;
+
+      if (state.showGrid) drawPosterGrid(ctx, canvas.width, canvas.height, cell, gridCol);
+
+      lines.forEach((line, lineIndex) => {
+        const w = linePatternWidth(line, cell, gap, tracking);
+        let x = (canvas.width - w) / 2;
+        [...line].forEach(ch => {
+          if (ch === " ") {
+            x += cell * 3.2;
+          } else {
+            drawLetter(ctx, ch, x, y, cell, gap, { label:false, ink:fg, paper:bg, guide:false, large:true });
+            x += 5 * cell + 4 * gap + tracking;
+          }
+        });
+        y += lineH;
+      });
+
       ctx.save();
-      ctx.strokeStyle = style.ink;
-      ctx.lineWidth = style.lineWidth * scale;
-      ctx.lineCap = style.lineCap;
-      ctx.lineJoin = style.lineJoin;
+      ctx.fillStyle = state.invert ? "rgba(255,255,255,.72)" : "rgba(0,0,0,.62)";
+      ctx.font = "24px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`${presetNames[state.resolvedPreset]} · seed ${state.seed} · grid 5×7`, canvas.width / 2, canvas.height - 34);
+      ctx.restore();
+    }
 
-      // Connect active cells into line strokes. Right, down, and diagonal connections keep the letters readable.
-      forEachActiveCell(pattern, (x, y) => {
-        const from = cellCenter(x, y, startX, startY, cell, gap, style, scale);
-        const neighbours = [
-          [x + 1, y],
-          [x, y + 1],
-          [x + 1, y + 1],
-          [x - 1, y + 1]
-        ];
+    function drawPosterGrid(ctx, w, h, cell, colour) {
+      ctx.save();
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = 1;
+      const step = Math.max(14, cell / 2);
+      for (let x = 0; x <= w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
 
-        neighbours.forEach(([nx, ny]) => {
+    function drawLetter(ctx, letter, x, y, cell, gap, options = {}) {
+      const pattern = PATTERNS[letter] || PATTERNS[letter.toUpperCase()] || PATTERNS["A"];
+      const ink = options.ink || state.ink;
+      const paper = options.paper || state.paper;
+      const accent = state.accent;
+      const preset = state.resolvedPreset;
+      const glyphW = 5 * cell + 4 * gap;
+      const glyphH = 7 * cell + 6 * gap;
+      const localSeed = state.seed + letter.charCodeAt(0) * 101 + state.variant;
+      const rand = seededRandom(localSeed);
+
+      if (options.guide) drawGlyphGuides(ctx, x, y, glyphW, glyphH, cell, gap);
+
+      if (preset === "line") {
+        drawLineLetter(ctx, pattern, x, y, cell, gap, ink, accent, false);
+      } else if (preset === "hybrid") {
+        drawLineLetter(ctx, pattern, x, y, cell, gap, ink, accent, true);
+      } else {
+        forEachActiveCell(pattern, (cx, cy) => {
+          const px = x + cx * (cell + gap);
+          const py = y + cy * (cell + gap);
+          const index = cx + cy * 5;
+          if (preset === "led") drawLedModule(ctx, px, py, cell, ink, accent, index, rand);
+          if (preset === "cash") drawCashModule(ctx, px, py, cell, ink, accent, paper, index, pattern, cx, cy);
+          if (preset === "bauhaus") drawBauhausModule(ctx, px, py, cell, ink, accent, index, rand);
+          if (preset === "avant") drawAvantModule(ctx, px, py, cell, ink, accent, index, rand);
+        });
+      }
+
+      if (options.label) {
+        ctx.save();
+        ctx.fillStyle = "#666";
+        ctx.font = `${Math.max(12, cell * .78)}px Arial, Helvetica, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(letter, x + glyphW / 2, y + glyphH + cell * .95);
+        ctx.restore();
+      }
+    }
+
+    function drawGlyphGuides(ctx, x, y, glyphW, glyphH, cell, gap) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(0,0,0,.16)";
+      ctx.lineWidth = 1;
+      [0, 2, 6].forEach(row => {
+        const yy = y + row * (cell + gap);
+        ctx.beginPath();
+        ctx.moveTo(x - cell * .3, yy);
+        ctx.lineTo(x + glyphW + cell * .3, yy);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    function drawAvantModule(ctx, x, y, cell, ink, accent, index, rand) {
+      ctx.save();
+      const kind = (index + state.variant) % 5;
+      ctx.fillStyle = kind === 1 || kind === 4 ? accent : ink;
+
+      if (kind === 0) {
+        ctx.fillRect(x, y, cell, cell);
+      } else if (kind === 1) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + cell);
+        ctx.lineTo(x + cell, y + cell);
+        ctx.lineTo(x + cell, y);
+        ctx.closePath();
+        ctx.fill();
+      } else if (kind === 2) {
+        ctx.beginPath();
+        ctx.arc(x + cell/2, y + cell/2, cell/2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 3) {
+        ctx.fillRect(x, y, cell, cell * .42);
+        ctx.fillRect(x, y + cell * .58, cell, cell * .42);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x + cell/2, y);
+        ctx.lineTo(x + cell, y + cell/2);
+        ctx.lineTo(x + cell/2, y + cell);
+        ctx.lineTo(x, y + cell/2);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawBauhausModule(ctx, x, y, cell, ink, accent, index, rand) {
+      ctx.save();
+      const kind = (index + state.variant) % 6;
+      ctx.fillStyle = kind % 3 === 0 ? accent : ink;
+
+      if (kind === 0) {
+        ctx.beginPath();
+        ctx.arc(x + cell / 2, y + cell / 2, cell / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 1) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + cell);
+        ctx.lineTo(x + cell / 2, y);
+        ctx.lineTo(x + cell, y + cell);
+        ctx.closePath();
+        ctx.fill();
+      } else if (kind === 2) {
+        ctx.fillRect(x, y, cell, cell);
+      } else if (kind === 3) {
+        ctx.beginPath();
+        ctx.arc(x + cell, y + cell, cell, Math.PI, Math.PI * 1.5);
+        ctx.lineTo(x + cell, y + cell);
+        ctx.closePath();
+        ctx.fill();
+      } else if (kind === 4) {
+        ctx.beginPath();
+        ctx.arc(x, y + cell, cell, Math.PI * 1.5, Math.PI * 2);
+        ctx.lineTo(x, y + cell);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(x + cell * .22, y, cell * .56, cell);
+      }
+      ctx.restore();
+    }
+
+    function drawLedModule(ctx, x, y, cell, ink, accent, index, rand) {
+      ctx.save();
+      const colour = (index + state.variant) % 7 === 0 ? accent : ink;
+      ctx.fillStyle = colour;
+      const dots = state.stroke > 11 ? 1 : 2;
+      if (dots === 1) {
+        ctx.beginPath();
+        ctx.arc(x + cell / 2, y + cell / 2, cell * .42, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        const r = cell * .16;
+        [[.32,.32],[.68,.32],[.32,.68],[.68,.68]].forEach(([dx, dy]) => {
+          ctx.beginPath();
+          ctx.arc(x + cell * dx, y + cell * dy, r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+      ctx.restore();
+    }
+
+    function drawCashModule(ctx, x, y, cell, ink, accent, paper, index, pattern, cx, cy) {
+      ctx.save();
+      ctx.strokeStyle = (index + state.variant) % 9 === 0 ? accent : ink;
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.lineWidth = Math.max(2, state.stroke * (cell / 52));
+      ctx.lineJoin = "miter";
+      const pad = cell * .12;
+
+      const top = !isActive(pattern, cx, cy - 1);
+      const bottom = !isActive(pattern, cx, cy + 1);
+      const left = !isActive(pattern, cx - 1, cy);
+      const right = !isActive(pattern, cx + 1, cy);
+
+      if (top) {
+        ctx.beginPath(); ctx.moveTo(x + pad, y + pad); ctx.lineTo(x + cell - pad, y + pad); ctx.stroke();
+      }
+      if (right) {
+        ctx.beginPath(); ctx.moveTo(x + cell - pad, y + pad); ctx.lineTo(x + cell - pad, y + cell - pad); ctx.stroke();
+      }
+      if (bottom) {
+        ctx.beginPath(); ctx.moveTo(x + cell - pad, y + cell - pad); ctx.lineTo(x + pad, y + cell - pad); ctx.stroke();
+      }
+      if (left) {
+        ctx.beginPath(); ctx.moveTo(x + pad, y + cell - pad); ctx.lineTo(x + pad, y + pad); ctx.stroke();
+      }
+
+      if (!top && !bottom && !left && !right) {
+        ctx.fillRect(x + cell * .37, y, cell * .26, cell);
+      }
+      ctx.restore();
+    }
+
+    function drawLineLetter(ctx, pattern, x, y, cell, gap, ink, accent, drawNodes) {
+      ctx.save();
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = Math.max(2, state.stroke * (cell / 52));
+      ctx.lineCap = "square";
+      ctx.lineJoin = "miter";
+
+      const center = (cx, cy) => ({
+        x: x + cx * (cell + gap) + cell / 2,
+        y: y + cy * (cell + gap) + cell / 2
+      });
+
+      forEachActiveCell(pattern, (cx, cy) => {
+        const from = center(cx, cy);
+        [[cx+1,cy],[cx,cy+1],[cx+1,cy+1],[cx-1,cy+1]].forEach(([nx, ny], nIndex) => {
           if (isActive(pattern, nx, ny)) {
-            const to = cellCenter(nx, ny, startX, startY, cell, gap, style, scale);
+            const to = center(nx, ny);
+            ctx.strokeStyle = (drawNodes && (cx + cy + nIndex + state.variant) % 6 === 0) ? accent : ink;
             ctx.beginPath();
             ctx.moveTo(from.x, from.y);
             ctx.lineTo(to.x, to.y);
@@ -505,255 +926,196 @@
         });
       });
 
-      // Mark isolated cells so dots and punctuation-like parts do not disappear.
-      forEachActiveCell(pattern, (x, y) => {
-        const neighbourCount = [
-          isActive(pattern, x + 1, y),
-          isActive(pattern, x - 1, y),
-          isActive(pattern, x, y + 1),
-          isActive(pattern, x, y - 1),
-          isActive(pattern, x + 1, y + 1),
-          isActive(pattern, x - 1, y + 1),
-          isActive(pattern, x + 1, y - 1),
-          isActive(pattern, x - 1, y - 1)
+      forEachActiveCell(pattern, (cx, cy) => {
+        const neighbours = [
+          isActive(pattern,cx+1,cy), isActive(pattern,cx-1,cy), isActive(pattern,cx,cy+1), isActive(pattern,cx,cy-1),
+          isActive(pattern,cx+1,cy+1), isActive(pattern,cx-1,cy+1), isActive(pattern,cx+1,cy-1), isActive(pattern,cx-1,cy-1)
         ].filter(Boolean).length;
-
-        const c = cellCenter(x, y, startX, startY, cell, gap, style, scale);
-        if (neighbourCount === 0 || drawNodes) {
-          drawNode(ctx, c.x, c.y, cell, style, scale);
+        if (drawNodes || neighbours === 0) {
+          const c = center(cx, cy);
+          ctx.fillStyle = (cx + cy + state.variant) % 5 === 0 ? accent : ink;
+          ctx.fillRect(c.x - cell * .15, c.y - cell * .15, cell * .3, cell * .3);
         }
       });
-
       ctx.restore();
     }
 
-    function drawNode(ctx, cx, cy, cell, style, scale) {
-      if (style.nodeShape === "none") return;
+    function drawGlyphCanvas(canvas, letter, sizeMode = "card") {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = state.paper;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#ded8cf";
+      ctx.lineWidth = 2;
+      if (sizeMode === "card") ctx.strokeRect(1, 1, w-2, h-2);
 
-      const size = Math.max(4 * scale, cell * 0.38);
-      ctx.save();
-      ctx.fillStyle = style.ink;
-
-      if (style.nodeShape === "circle") {
-        ctx.beginPath();
-        ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      if (style.nodeShape === "square") {
-        ctx.fillRect(cx - size / 2, cy - size / 2, size, size);
-      }
-
-      if (style.nodeShape === "diamond") {
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - size / 2);
-        ctx.lineTo(cx + size / 2, cy);
-        ctx.lineTo(cx, cy + size / 2);
-        ctx.lineTo(cx - size / 2, cy);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      ctx.restore();
+      const cell = sizeMode === "small" ? 11 : 18;
+      const gap = cell * .18;
+      const glyphW = 5 * cell + 4 * gap;
+      const glyphH = 7 * cell + 6 * gap;
+      const x = (w - glyphW) / 2;
+      const y = sizeMode === "small" ? (h - glyphH) / 2 : 32;
+      drawLetter(ctx, letter, x, y, cell, gap, { label: sizeMode === "card", guide: sizeMode === "card" });
     }
 
-    function drawCell(ctx, x, y, startX, startY, cell, gap, letter, style, scale, mode) {
-      const cellSeed = style.seed + letter.charCodeAt(0) * 131 + x * 17 + y * 29;
-      const random = seededRandom(cellSeed);
-      const jitterX = (random() - 0.5) * style.jitter * 2 * scale;
-      const jitterY = (random() - 0.5) * style.jitter * 2 * scale;
-      const px = startX + x * (cell + gap) + y * style.slant * scale + jitterX;
-      const py = startY + y * (cell + gap) + jitterY;
-
-      ctx.save();
-      ctx.fillStyle = style.ink;
-      ctx.strokeStyle = style.ink;
-      ctx.lineWidth = Math.max(2, style.lineWidth * 0.65 * scale);
-      ctx.lineCap = style.lineCap;
-      ctx.lineJoin = style.lineJoin;
-
-      if (mode === "outline") {
-        if (style.shape === "circle") {
-          ctx.beginPath();
-          ctx.arc(px + cell / 2, py + cell / 2, cell / 2, 0, Math.PI * 2);
-          ctx.stroke();
-        } else if (style.shape === "diamond") {
-          ctx.beginPath();
-          ctx.moveTo(px + cell / 2, py);
-          ctx.lineTo(px + cell, py + cell / 2);
-          ctx.lineTo(px + cell / 2, py + cell);
-          ctx.lineTo(px, py + cell / 2);
-          ctx.closePath();
-          ctx.stroke();
-        } else {
-          roundRect(ctx, px, py, cell, cell, style.shape === "rounded" ? style.cornerRadius * scale : 0);
-          ctx.stroke();
-        }
-        ctx.restore();
-        return;
-      }
-
-      if (style.shape === "square") {
-        ctx.fillRect(px, py, cell, cell);
-      }
-
-      if (style.shape === "rounded") {
-        roundRect(ctx, px, py, cell, cell, style.cornerRadius * scale);
-        ctx.fill();
-      }
-
-      if (style.shape === "circle") {
-        ctx.beginPath();
-        ctx.arc(px + cell / 2, py + cell / 2, cell / 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      if (style.shape === "diamond") {
-        ctx.beginPath();
-        ctx.moveTo(px + cell / 2, py);
-        ctx.lineTo(px + cell, py + cell / 2);
-        ctx.lineTo(px + cell / 2, py + cell);
-        ctx.lineTo(px, py + cell / 2);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      if (style.shape === "slash") {
-        ctx.beginPath();
-        ctx.moveTo(px + cell * 0.25, py);
-        ctx.lineTo(px + cell, py);
-        ctx.lineTo(px + cell * 0.75, py + cell);
-        ctx.lineTo(px, py + cell);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      if (style.serif) {
-        drawSerif(ctx, px, py, cell, random);
-      }
-
-      ctx.restore();
-    }
-
-    function drawGuideGrid(ctx, startX, startY, cols, rows, cell, gap) {
-      ctx.save();
-      ctx.strokeStyle = "#eeeeee";
-      ctx.lineWidth = 1;
-
-      for (let y = 0; y <= rows; y++) {
-        const yy = startY + y * (cell + gap) - gap / 2;
-        ctx.beginPath();
-        ctx.moveTo(startX - 7, yy);
-        ctx.lineTo(startX + cols * (cell + gap), yy);
-        ctx.stroke();
-      }
-
-      for (let x = 0; x <= cols; x++) {
-        const xx = startX + x * (cell + gap) - gap / 2;
-        ctx.beginPath();
-        ctx.moveTo(xx, startY - 7);
-        ctx.lineTo(xx, startY + rows * (cell + gap));
-        ctx.stroke();
-      }
-
-      ctx.restore();
-    }
-
-    function drawGuides(ctx, startX, startY, glyphWidth, cell, gap, scale) {
-      ctx.save();
-      ctx.strokeStyle = "#d4d4d4";
-      ctx.lineWidth = 1;
-
-      const guideLines = [
-        startY,
-        startY + 2 * (cell + gap),
-        startY + 6 * (cell + gap)
-      ];
-
-      guideLines.forEach((yy) => {
-        ctx.beginPath();
-        ctx.moveTo(startX - 10 * scale, yy);
-        ctx.lineTo(startX + glyphWidth + 10 * scale, yy);
-        ctx.stroke();
+    function renderSpecimens() {
+      const upper = document.getElementById("specimenUpper");
+      const lower = document.getElementById("specimenLower");
+      upper.innerHTML = "";
+      lower.innerHTML = "";
+      UPPERCASE.split("").forEach(letter => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 112; canvas.height = 144;
+        drawGlyphCanvas(canvas, letter, "small");
+        upper.appendChild(canvas);
       });
-
-      ctx.restore();
+      LOWERCASE.split("").forEach(letter => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 112; canvas.height = 144;
+        drawGlyphCanvas(canvas, letter, "small");
+        lower.appendChild(canvas);
+      });
     }
 
-    function drawSerif(ctx, px, py, cell, random) {
-      const s = cell * 0.22;
-      ctx.fillStyle = "#111111";
-      if (random() > 0.5) ctx.fillRect(px - s * 0.4, py, s, s);
-      if (random() > 0.5) ctx.fillRect(px + cell - s * 0.6, py, s, s);
-      if (random() > 0.5) ctx.fillRect(px - s * 0.4, py + cell - s, s, s);
-      if (random() > 0.5) ctx.fillRect(px + cell - s * 0.6, py + cell - s, s, s);
+    function renderAlphabet() {
+      const upper = document.getElementById("uppercase");
+      const lower = document.getElementById("lowercase");
+      upper.innerHTML = "";
+      lower.innerHTML = "";
+      UPPERCASE.split("").forEach(letter => upper.appendChild(makeGlyphCard(letter)));
+      LOWERCASE.split("").forEach(letter => lower.appendChild(makeGlyphCard(letter)));
     }
 
-    function roundRect(ctx, x, y, width, height, radius) {
-      const r = Math.min(radius, width / 2, height / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
+    function makeGlyphCard(letter) {
+      const card = document.createElement("div");
+      card.className = "glyph-card";
+      const canvas = document.createElement("canvas");
+      canvas.width = 224;
+      canvas.height = 288;
+      drawGlyphCanvas(canvas, letter, "card");
+      const label = document.createElement("div");
+      label.className = "glyph-label";
+      label.textContent = letter;
+      card.appendChild(canvas);
+      card.appendChild(label);
+      return card;
     }
 
-    function downloadPNG() {
+    function updateRationale() {
+      const name = getDisplayName();
+      const style = presetNames[state.resolvedPreset];
+      const text = [
+        `Display text: ${name}`,
+        `Typeface direction: ${style}.`,
+        `Construction: 5×7 modular grid with repeated geometric rules across all A–Z and a–z glyphs.`,
+        `Visual language: simple shapes, line segments, dot-matrix or cash-register style modules, depending on the selected direction.`,
+        `Colour system: black plus one accent colour (${state.accent}), supporting the two-colour poster/brochure restriction.`,
+        `Design refinement note: export this as a concept, then manually adjust counters, kerning and repeated details for the final display-type artwork.`
+      ].join("\n");
+      document.getElementById("rationaleText").value = text;
+    }
+
+    function updateMeta() {
+      document.getElementById("meta").textContent =
+        `Output: 26 capitals + 26 lowercase = 52 glyphs | Direction: ${presetNames[state.resolvedPreset]} | Tracking: ${state.tracking} | Stroke: ${state.stroke} | Seed: ${state.seed}`;
+    }
+
+    function renderAll(newSeed = false) {
+      syncStateFromControls(newSeed);
+      drawConferencePreview();
+      renderSpecimens();
+      renderAlphabet();
+      updateRationale();
+      updateMeta();
+    }
+
+    function downloadCanvas(canvas, filename) {
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    function downloadConferenceName() {
+      downloadCanvas(document.getElementById("conferenceCanvas"), `custom-display-type-${state.seed}.png`);
+    }
+
+    function downloadAlphabetSheet() {
       const letters = UPPERCASE + LOWERCASE;
       const cardW = 224;
       const cardH = 288;
       const columns = 8;
       const rows = Math.ceil(letters.length / columns);
-      const padding = 50;
-      const titleH = 90;
-
+      const padding = 55;
+      const titleH = 105;
       const sheet = document.createElement("canvas");
       sheet.width = padding * 2 + columns * cardW;
       sheet.height = padding * 2 + titleH + rows * cardH;
       const ctx = sheet.getContext("2d");
 
-      ctx.fillStyle = "#f4f4f1";
+      ctx.fillStyle = "#f3f1ec";
       ctx.fillRect(0, 0, sheet.width, sheet.height);
-
-      ctx.fillStyle = "#111111";
-      ctx.font = "bold 42px Arial, Helvetica, sans-serif";
+      ctx.fillStyle = "#111";
+      ctx.font = "bold 44px Arial, Helvetica, sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("Random Typeface Generator", padding, padding + 42);
+      ctx.fillText("Experimental Geometric Typeface", padding, padding + 42);
       ctx.font = "22px Arial, Helvetica, sans-serif";
-      ctx.fillText(`52 glyphs: A-Z and a-z | Mode: ${currentStyle.mode} | Seed: ${currentSeed}`, padding, padding + 76);
+      ctx.fillText(`A–Z + a–z | ${presetNames[state.resolvedPreset]} | seed ${state.seed}`, padding, padding + 78);
 
-      for (let i = 0; i < letters.length; i++) {
+      letters.split("").forEach((letter, i) => {
         const temp = document.createElement("canvas");
         temp.width = cardW;
         temp.height = cardH;
-        drawGlyph(temp, letters[i], currentStyle, true, true);
-
+        drawGlyphCanvas(temp, letter, "card");
         const col = i % columns;
         const row = Math.floor(i / columns);
-        const x = padding + col * cardW;
-        const y = padding + titleH + row * cardH;
-        ctx.drawImage(temp, x, y);
-      }
-
-      const link = document.createElement("a");
-      link.download = `random-typeface-${currentSeed}.png`;
-      link.href = sheet.toDataURL("image/png");
-      link.click();
+        ctx.drawImage(temp, padding + col * cardW, padding + titleH + row * cardH);
+      });
+      downloadCanvas(sheet, `experimental-alphabet-${state.seed}.png`);
     }
 
-    document.getElementById("generateButton").addEventListener("click", generateTypeface);
-    document.getElementById("downloadButton").addEventListener("click", downloadPNG);
-    document.getElementById("printButton").addEventListener("click", () => window.print());
-    document.getElementById("modeSelect").addEventListener("change", generateTypeface);
-    document.getElementById("gridToggle").addEventListener("change", generateTypeface);
+    function downloadFullSpecimen() {
+      const word = document.getElementById("conferenceCanvas");
+      const sheet = document.createElement("canvas");
+      sheet.width = 1800;
+      sheet.height = 1220;
+      const ctx = sheet.getContext("2d");
+      ctx.fillStyle = "#f3f1ec";
+      ctx.fillRect(0, 0, sheet.width, sheet.height);
+      ctx.drawImage(word, 0, 0);
 
-    generateTypeface();
+      ctx.fillStyle = "#111";
+      ctx.font = "bold 34px Arial, Helvetica, sans-serif";
+      ctx.fillText("A–Z", 80, 805);
+      drawSpecimenLineToContext(ctx, UPPERCASE, 170, 760, 26);
+      ctx.fillText("a–z", 80, 1025);
+      drawSpecimenLineToContext(ctx, LOWERCASE, 170, 980, 26);
+      downloadCanvas(sheet, `full-typeface-specimen-${state.seed}.png`);
+    }
+
+    function drawSpecimenLineToContext(ctx, alphabet, startX, startY, cell) {
+      const gap = cell * .18;
+      let x = startX;
+      alphabet.split("").forEach(letter => {
+        drawLetter(ctx, letter, x, startY, cell, gap, { label:false, guide:false });
+        x += 5 * cell + 4 * gap + 9;
+      });
+    }
+
+    document.getElementById("generateButton").addEventListener("click", () => renderAll(true));
+    document.getElementById("downloadWordButton").addEventListener("click", downloadConferenceName);
+    document.getElementById("downloadAlphabetButton").addEventListener("click", downloadAlphabetSheet);
+    document.getElementById("downloadSpecimenButton").addEventListener("click", downloadFullSpecimen);
+    document.getElementById("printButton").addEventListener("click", () => window.print());
+
+    ["conferenceInput", "presetSelect", "accentInput", "trackingInput", "strokeInput", "seedInput", "gridToggle", "upperToggle", "invertToggle"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => renderAll(false));
+      document.getElementById(id).addEventListener("change", () => renderAll(false));
+    });
+
+    renderAll(false);
   </script>
 </body>
 </html>
