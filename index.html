@@ -644,9 +644,9 @@
     function buildGenStyle(seed) {
       const rand = seededRandom(seed + 7777);
       const pick = arr => arr[Math.floor(rand() * arr.length)];
+      // family changes the actual letter SHAPE (corner/stroke treatment), not just colour.
       return {
-        rounding: pick([0, 0, 0.15, 0.3, 0.5, 0.5]),   // mostly block, sometimes rounded
-        family: pick(["block", "block", "block", "dots"]), // mostly solid, sometimes LED dots
+        family: pick(["square", "rounded", "chamfer", "square", "rounded", "chamfer", "outline", "dots"]),
         accentEvery: pick([0, 0, 5, 7, 11])             // 0 = single colour, else every Nth cell
       };
     }
@@ -870,6 +870,29 @@
       ctx.fill();
     }
 
+    // Like fillRoundedCell but external corners are cut at 45 degrees (chamfer/bevel)
+    // instead of rounded, giving a faceted geometric look.
+    function fillChamferCell(ctx, x, y, cell, color, nb, corners, c) {
+      const e = 0.75;
+      const x0 = x - (nb.l ? e : 0);
+      const y0 = y - (nb.t ? e : 0);
+      const x1 = x + cell + (nb.r ? e : 0);
+      const y1 = y + cell + (nb.b ? e : 0);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x0 + (corners.tl ? c : 0), y0);
+      ctx.lineTo(x1 - (corners.tr ? c : 0), y0);
+      if (corners.tr) ctx.lineTo(x1, y0 + c);
+      ctx.lineTo(x1, y1 - (corners.br ? c : 0));
+      if (corners.br) ctx.lineTo(x1 - c, y1);
+      ctx.lineTo(x0 + (corners.bl ? c : 0), y1);
+      if (corners.bl) ctx.lineTo(x0, y1 - c);
+      ctx.lineTo(x0, y0 + (corners.tl ? c : 0));
+      if (corners.tl) ctx.lineTo(x0 + c, y0);
+      ctx.closePath();
+      ctx.fill();
+    }
+
     // Theo van Doesburg, 1919: strictly rectilinear, even-weight solid blocks.
     function drawVanDoesburgModule(ctx, x, y, cell, ink, accent, pattern, cx, cy) {
       const nb = {
@@ -882,29 +905,28 @@
     // Generated typeface: one coherent geometric face per seed, using the style
     // parameters in state.genStyle (corner rounding, family, two-colour accent rule).
     function drawGeneratedModule(ctx, x, y, cell, ink, accent, pattern, cx, cy, index) {
-      const g = state.genStyle || { rounding: 0.3, family: "block", accentEvery: 0 };
+      const g = state.genStyle || { family: "square", accentEvery: 0 };
+
+      // Families that change the whole letter shape, reusing the dedicated renderers.
+      if (g.family === "outline") { drawCashModule(ctx, x, y, cell, ink, accent, state.paper, index, pattern, cx, cy); return; }
+      if (g.family === "dots") { drawLedModule(ctx, x, y, cell, ink, accent, index, null); return; }
+
       const color = (g.accentEvery && index % g.accentEvery === 0) ? accent : ink;
-
-      if (g.family === "dots") {
-        ctx.save();
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x + cell / 2, y + cell / 2, cell * 0.42, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        return;
-      }
-
       const t = isActive(pattern, cx, cy - 1), b = isActive(pattern, cx, cy + 1);
       const l = isActive(pattern, cx - 1, cy), r = isActive(pattern, cx + 1, cy);
-      const R = g.rounding * cell;
-      const rad = {
-        tl: (!t && !l) ? R : 0,
-        tr: (!t && !r) ? R : 0,
-        br: (!b && !r) ? R : 0,
-        bl: (!b && !l) ? R : 0
-      };
-      fillRoundedCell(ctx, x, y, cell, color, { t, b, l, r }, rad);
+      const nb = { t, b, l, r };
+      const ext = { tl: !t && !l, tr: !t && !r, br: !b && !r, bl: !b && !l };
+
+      if (g.family === "rounded") {
+        const R = cell / 2;
+        fillRoundedCell(ctx, x, y, cell, color, nb, {
+          tl: ext.tl ? R : 0, tr: ext.tr ? R : 0, br: ext.br ? R : 0, bl: ext.bl ? R : 0
+        });
+      } else if (g.family === "chamfer") {
+        fillChamferCell(ctx, x, y, cell, color, nb, ext, cell * 0.5);
+      } else { // square (Van Doesburg)
+        fillRoundedCell(ctx, x, y, cell, color, nb, { tl: 0, tr: 0, br: 0, bl: 0 });
+      }
     }
 
     // Herbert Bayer "universal", 1925: geometric circle + bar. Solid blocks with
@@ -1173,8 +1195,8 @@
       let genTag = "";
       if (state.resolvedPreset === "generated" && state.genStyle) {
         const g = state.genStyle;
-        const shape = g.family === "dots" ? "LED dots" : (g.rounding >= 0.4 ? "rounded" : g.rounding <= 0.05 ? "rectilinear" : "soft corners");
-        genTag = ` [${shape}${g.accentEvery ? ", 2-colour" : ""}]`;
+        const names = { square: "square", rounded: "rounded", chamfer: "cut corners", outline: "outline", dots: "LED dots" };
+        genTag = ` [${names[g.family] || g.family}${g.accentEvery ? ", 2-colour" : ""}]`;
       }
       document.getElementById("meta").textContent =
         `52 glyphs (A-Z + a-z) | ${presetNames[state.resolvedPreset]}${genTag} | cell ${CELL_MM} mm${gridNote} | tracking ${state.tracking} | seed ${state.seed} | press Generate for a new random typeface`;
