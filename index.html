@@ -241,7 +241,7 @@
 
     .specimen-row canvas {
       width: 48px;
-      height: 62px;
+      height: auto;
       background: white;
       border: 1px solid #e6e1d8;
       border-radius: 8px;
@@ -265,7 +265,7 @@
 
     .glyph-card canvas {
       width: 112px;
-      height: 144px;
+      height: auto;
       display: block;
       margin: 0 auto;
       background: white;
@@ -308,11 +308,32 @@
     }
 
     @media print {
-      header { position: static; box-shadow: none; }
+      @page { margin: 8mm; }
+      header { position: static; box-shadow: none; background: white; color: black; padding: 0 0 6px; }
+      header p, .controls, .meta, .swatches, .tool-row,
       button, select, input, label, textarea { display: none !important; }
+      h1 { font-size: 16pt; color: black; }
       body { background: white; }
-      .panel, .glyph-card { box-shadow: none; }
-      .alphabet-grid { grid-template-columns: repeat(6, 1fr); }
+      .panel, .glyph-card { box-shadow: none; border: none; padding: 0; }
+      /* Hide everything except the alphabet sheets for clean tracing pages. */
+      .hero-grid, .specimen, .split { display: none !important; }
+
+      section { margin: 0 0 6mm; }
+      h2 { font-size: 11pt; }
+
+      /* True-size glyphs: each card prints at exactly (cells x cell-mm).
+         A glyph box is 5x7 cells plus a 1-cell pad each side = 7x9 cells. */
+      .alphabet-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0;
+      }
+      .glyph-card { break-inside: avoid; padding: 0; margin: 0; }
+      .glyph-card canvas {
+        width: var(--card-w-mm) !important;
+        height: var(--card-h-mm) !important;
+      }
+      .glyph-label { display: none; }
     }
   </style>
 </head>
@@ -321,7 +342,7 @@
     <h1>Experimental Geometric Typeface Tool</h1>
     <p>
       Build a custom display typeface for any word, phrase, heading, label, poster title, signage text or event name using modular geometry, 1910s/1920s avant-garde influence,
-      cash-register logic and LED/digital signage construction. The tool still outputs all 52 glyphs: A–Z and a–z.
+      cash-register logic and LED/digital signage construction. The tool still outputs all 52 glyphs: A-Z and a-z.
     </p>
 
     <div class="controls">
@@ -370,6 +391,12 @@
       </div>
 
       <div class="control small">
+        <label>Cell mm
+          <input id="cellMmInput" type="number" min="3" max="12" step="0.5" value="5.5" />
+        </label>
+      </div>
+
+      <div class="control small">
         <label class="inline-check">
           <input id="gridToggle" type="checkbox" checked /> Grid
         </label>
@@ -411,7 +438,8 @@
           <canvas id="conferenceCanvas" width="1800" height="720"></canvas>
         </div>
         <div class="tool-row">
-          <button id="printButton">Print</button>
+          <button id="printTracingButton" class="accent-btn">Print A-Z tracing sheet</button>
+          <button id="printButton">Print this page</button>
           <button id="downloadSpecimenButton">Download full specimen PNG</button>
         </div>
         <div class="swatches">
@@ -428,11 +456,11 @@
           modular and suitable for a typographic poster, brochure, logo, heading or signage system.
         </p>
         <div class="checklist">
-          <div class="check"><span class="tick">✓</span><span>Always creates 26 capitals and 26 lowercase letters.</span></div>
-          <div class="check"><span class="tick">✓</span><span>Includes simple geometric modules: squares, circles, triangles, arcs, outlines and lines.</span></div>
-          <div class="check"><span class="tick">✓</span><span>Includes cash-register, LED matrix and line-based construction modes.</span></div>
-          <div class="check"><span class="tick">✓</span><span>Uses black plus one accent colour so the preview can match a two-colour poster direction.</span></div>
-          <div class="check"><span class="tick">✓</span><span>Shows grid, baseline, cap height and x-height guides for design refinement.</span></div>
+          <div class="check"><span class="tick">&#10003;</span><span>Always creates 26 capitals and 26 lowercase letters.</span></div>
+          <div class="check"><span class="tick">&#10003;</span><span>Includes simple geometric modules: squares, circles, triangles, arcs, outlines and lines.</span></div>
+          <div class="check"><span class="tick">&#10003;</span><span>Includes cash-register, LED matrix and line-based construction modes.</span></div>
+          <div class="check"><span class="tick">&#10003;</span><span>Uses black plus one accent colour so the preview can match a two-colour poster direction.</span></div>
+          <div class="check"><span class="tick">&#10003;</span><span>Shows grid, baseline, cap height and x-height guides for design refinement.</span></div>
         </div>
       </aside>
     </section>
@@ -529,6 +557,31 @@
       z:["00000","00000","11111","00010","00100","01000","11111"]
     };
 
+    // Physical scale: every modular grid cell is a real, fixed size in mm.
+    // Default 5.5 mm to match the supplied GridA4.pdf grid paper, so printed glyphs
+    // can be traced cell-for-cell. Canvas pixels are defined at print resolution.
+    const DPI = 300;                                  // export resolution
+    const PX_PER_MM = DPI / 25.4;                     // ~ 11.811 px per mm
+    const GAP = 0;                                    // modules tile exactly on the grid
+    let CELL_MM = 5.5;                                // grid cell size in mm (adjustable)
+    let CELL = Math.round(PX_PER_MM * CELL_MM);       // px in one cell
+    let GLYPH_W = 5 * CELL + 4 * GAP;                 // glyph box = 5 cells wide
+    let GLYPH_H = 7 * CELL + 6 * GAP;                 // glyph box = 7 cells tall
+
+    // Recompute the cell when the mm size changes, and expose true-size dimensions
+    // to the print stylesheet via CSS custom properties (cells -> mm).
+    function recomputeCell(mm) {
+      CELL_MM = (!mm || mm <= 0) ? 5.5 : mm;
+      CELL = Math.round(PX_PER_MM * CELL_MM);
+      GLYPH_W = 5 * CELL + 4 * GAP;
+      GLYPH_H = 7 * CELL + 6 * GAP;
+      const root = document.documentElement.style;
+      root.setProperty("--cell-mm", CELL_MM + "mm");
+      root.setProperty("--card-w-mm", (7 * CELL_MM) + "mm");  // glyph 5 cells + 1-cell pad each side
+      root.setProperty("--card-h-mm", (9 * CELL_MM) + "mm");  // glyph 7 cells + 1-cell pad each side
+      root.setProperty("--preview-w-mm", (1800 / PX_PER_MM).toFixed(2) + "mm");
+    }
+
     const state = {
       seed: 2026,
       preset: "random",
@@ -585,6 +638,7 @@
         document.getElementById("seedInput").value = nextSeed;
       }
       state.seed = Number(document.getElementById("seedInput").value) || 2026;
+      recomputeCell(Number(document.getElementById("cellMmInput").value));
       state.accent = document.getElementById("accentInput").value || "#e60046";
       state.tracking = Number(document.getElementById("trackingInput").value);
       state.stroke = Number(document.getElementById("strokeInput").value);
@@ -648,50 +702,42 @@
       const canvas = document.getElementById("conferenceCanvas");
       const ctx = canvas.getContext("2d");
       const text = getDisplayName();
+      const tracking = state.tracking;
+      const marginX = CELL * 2;
+      const marginY = CELL * 1.6;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Cell is fixed at the chosen mm size. Wrap to a comfortable line length, then
+      // grow BOTH canvas dimensions to fit at that true cell size. CSS scales the
+      // canvas down for display, so every cell stays physically correct.
+      const lines = wrapText(text, 9);
+
+      const lineH = GLYPH_H + CELL * 1.4;
+      const totalH = lines.length * GLYPH_H + (lines.length - 1) * CELL * 1.4;
+      const longest = Math.max(...lines.map(line => linePatternWidth(line, CELL, GAP, tracking)));
+      const neededW = Math.max(1200, Math.ceil(longest + marginX * 2));
+      const neededH = Math.ceil(totalH + marginY * 2 + CELL * 1.6);
+      if (canvas.width !== neededW) canvas.width = neededW;
+      if (canvas.height !== neededH) canvas.height = neededH;
+
       const bg = state.invert ? state.ink : state.paper;
       const fg = state.invert ? state.paper : state.ink;
-      const gridCol = state.invert ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
+      const gridCol = state.invert ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.10)";
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const roughMax = Math.max(10, Math.floor(34 - Math.max(0, text.length - 12) * .35));
-      const lines = wrapText(text, roughMax);
-      const marginX = 86;
-      const marginY = 90;
-      const gapRatio = .18;
-      const tracking = state.tracking;
-      let cell = 58;
+      if (state.showGrid) drawPosterGrid(ctx, canvas.width, canvas.height, gridCol);
 
-      for (let i = 0; i < 20; i++) {
-        const gap = cell * gapRatio;
-        const longest = Math.max(...lines.map(line => linePatternWidth(line, cell, gap, tracking)));
-        const totalHeight = lines.length * (7 * cell + 6 * gap) + (lines.length - 1) * cell * 1.35;
-        const fitW = (canvas.width - marginX * 2) / longest;
-        const fitH = (canvas.height - marginY * 2) / totalHeight;
-        const scale = Math.min(1, fitW, fitH);
-        if (scale >= .995) break;
-        cell *= scale;
-      }
-
-      const gap = cell * gapRatio;
-      const glyphH = 7 * cell + 6 * gap;
-      const lineH = glyphH + cell * 1.35;
-      const totalH = lines.length * glyphH + (lines.length - 1) * cell * 1.35;
-      let y = (canvas.height - totalH) / 2;
-
-      if (state.showGrid) drawPosterGrid(ctx, canvas.width, canvas.height, cell, gridCol);
-
-      lines.forEach((line, lineIndex) => {
-        const w = linePatternWidth(line, cell, gap, tracking);
-        let x = (canvas.width - w) / 2;
+      // Snap the block to the 5 mm grid so modules sit exactly on the grid lines.
+      let y = Math.round(((canvas.height - totalH) / 2) / CELL) * CELL;
+      lines.forEach(line => {
+        const w = linePatternWidth(line, CELL, GAP, tracking);
+        let x = Math.round(((canvas.width - w) / 2) / CELL) * CELL;
         [...line].forEach(ch => {
           if (ch === " ") {
-            x += cell * 3.2;
+            x += CELL * 3.2;
           } else {
-            drawLetter(ctx, ch, x, y, cell, gap, { label:false, ink:fg, paper:bg, guide:false, large:true });
-            x += 5 * cell + 4 * gap + tracking;
+            drawLetter(ctx, ch, x, y, CELL, GAP, { label:false, ink:fg, paper:bg, guide:false });
+            x += GLYPH_W + tracking;
           }
         });
         y += lineH;
@@ -701,22 +747,21 @@
       ctx.fillStyle = state.invert ? "rgba(255,255,255,.72)" : "rgba(0,0,0,.62)";
       ctx.font = "24px Arial, Helvetica, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(`${presetNames[state.resolvedPreset]} · seed ${state.seed} · grid 5×7`, canvas.width / 2, canvas.height - 34);
+      ctx.fillText(`${presetNames[state.resolvedPreset]} | seed ${state.seed} | 5 mm grid | 5x7 modules`, canvas.width / 2, canvas.height - 18);
       ctx.restore();
     }
 
-    function drawPosterGrid(ctx, w, h, cell, colour) {
+    function drawPosterGrid(ctx, w, h, colour) {
       ctx.save();
       ctx.strokeStyle = colour;
       ctx.lineWidth = 1;
-      const step = Math.max(14, cell / 2);
-      for (let x = 0; x <= w; x += step) {
+      for (let x = 0; x <= w; x += CELL) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, h);
         ctx.stroke();
       }
-      for (let y = 0; y <= h; y += step) {
+      for (let y = 0; y <= h; y += CELL) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(w, y);
@@ -940,41 +985,50 @@
       ctx.restore();
     }
 
-    function drawGlyphCanvas(canvas, letter, sizeMode = "card") {
+    // Every glyph canvas is built on the fixed 5 mm cell. The canvas is sized to
+    // GLYPH_W x GLYPH_H plus a one-cell margin (whole 5 mm steps).
+    // CSS scales the on-screen size; the pixel buffer stays true 5 mm for printing.
+    function drawGlyphCanvas(canvas, letter, withGuides = true) {
+      const pad = CELL;                         // one 5 mm cell of margin all round
+      canvas.width = GLYPH_W + pad * 2;
+      canvas.height = GLYPH_H + pad * 2;
       const ctx = canvas.getContext("2d");
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = state.paper;
-      ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = "#ded8cf";
-      ctx.lineWidth = 2;
-      if (sizeMode === "card") ctx.strokeRect(1, 1, w-2, h-2);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const cell = sizeMode === "small" ? 11 : 18;
-      const gap = cell * .18;
-      const glyphW = 5 * cell + 4 * gap;
-      const glyphH = 7 * cell + 6 * gap;
-      const x = (w - glyphW) / 2;
-      const y = sizeMode === "small" ? (h - glyphH) / 2 : 32;
-      drawLetter(ctx, letter, x, y, cell, gap, { label: sizeMode === "card", guide: sizeMode === "card" });
+      if (withGuides) {
+        // light 5 mm reference grid behind the glyph
+        ctx.save();
+        ctx.strokeStyle = "rgba(0,0,0,.10)";
+        ctx.lineWidth = 1;
+        for (let gx = pad; gx <= pad + GLYPH_W + 0.5; gx += CELL) {
+          ctx.beginPath(); ctx.moveTo(gx, pad); ctx.lineTo(gx, pad + GLYPH_H); ctx.stroke();
+        }
+        for (let gy = pad; gy <= pad + GLYPH_H + 0.5; gy += CELL) {
+          ctx.beginPath(); ctx.moveTo(pad, gy); ctx.lineTo(pad + GLYPH_W, gy); ctx.stroke();
+        }
+        ctx.restore();
+        ctx.strokeStyle = "#ded8cf";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+      }
+
+      drawLetter(ctx, letter, pad, pad, CELL, GAP, { label: false, guide: false });
     }
 
     function renderSpecimens() {
       const upper = document.getElementById("specimenUpper");
       const lower = document.getElementById("specimenLower");
-      upper.innerHTML = "";
-      lower.innerHTML = "";
+      upper.replaceChildren();
+      lower.replaceChildren();
       UPPERCASE.split("").forEach(letter => {
         const canvas = document.createElement("canvas");
-        canvas.width = 112; canvas.height = 144;
-        drawGlyphCanvas(canvas, letter, "small");
+        drawGlyphCanvas(canvas, letter, false);
         upper.appendChild(canvas);
       });
       LOWERCASE.split("").forEach(letter => {
         const canvas = document.createElement("canvas");
-        canvas.width = 112; canvas.height = 144;
-        drawGlyphCanvas(canvas, letter, "small");
+        drawGlyphCanvas(canvas, letter, false);
         lower.appendChild(canvas);
       });
     }
@@ -982,8 +1036,8 @@
     function renderAlphabet() {
       const upper = document.getElementById("uppercase");
       const lower = document.getElementById("lowercase");
-      upper.innerHTML = "";
-      lower.innerHTML = "";
+      upper.replaceChildren();
+      lower.replaceChildren();
       UPPERCASE.split("").forEach(letter => upper.appendChild(makeGlyphCard(letter)));
       LOWERCASE.split("").forEach(letter => lower.appendChild(makeGlyphCard(letter)));
     }
@@ -992,9 +1046,7 @@
       const card = document.createElement("div");
       card.className = "glyph-card";
       const canvas = document.createElement("canvas");
-      canvas.width = 224;
-      canvas.height = 288;
-      drawGlyphCanvas(canvas, letter, "card");
+      drawGlyphCanvas(canvas, letter, true);
       const label = document.createElement("div");
       label.className = "glyph-label";
       label.textContent = letter;
@@ -1009,7 +1061,7 @@
       const text = [
         `Display text: ${name}`,
         `Typeface direction: ${style}.`,
-        `Construction: 5×7 modular grid with repeated geometric rules across all A–Z and a–z glyphs.`,
+        `Construction: 5x7 modular grid with repeated geometric rules across all A-Z and a-z glyphs.`,
         `Visual language: simple shapes, line segments, dot-matrix or cash-register style modules, depending on the selected direction.`,
         `Colour system: black plus one accent colour (${state.accent}), supporting the two-colour poster/brochure restriction.`,
         `Design refinement note: export this as a concept, then manually adjust counters, kerning and repeated details for the final display-type artwork.`
@@ -1018,8 +1070,9 @@
     }
 
     function updateMeta() {
+      const gridNote = Math.abs(CELL_MM - 5.5) < 0.01 ? " (matches GridA4)" : "";
       document.getElementById("meta").textContent =
-        `Output: 26 capitals + 26 lowercase = 52 glyphs | Direction: ${presetNames[state.resolvedPreset]} | Tracking: ${state.tracking} | Stroke: ${state.stroke} | Seed: ${state.seed}`;
+        `52 glyphs (A-Z + a-z) | ${presetNames[state.resolvedPreset]} | cell ${CELL_MM} mm${gridNote} | tracking ${state.tracking} | seed ${state.seed} | use Print for true-size tracing sheets`;
     }
 
     function renderAll(newSeed = false) {
@@ -1042,11 +1095,14 @@
       downloadCanvas(document.getElementById("conferenceCanvas"), `custom-display-type-${state.seed}.png`);
     }
 
-    function downloadAlphabetSheet() {
+    // Build the A-Z + a-z sheet (cards are true mm; sheet width derived from card
+    // size so nothing overflows). Returns the canvas for download or printing.
+    function buildAlphabetSheet(columns = 8) {
       const letters = UPPERCASE + LOWERCASE;
-      const cardW = 224;
-      const cardH = 288;
-      const columns = 8;
+      const sample = document.createElement("canvas");
+      drawGlyphCanvas(sample, "A", true);
+      const cardW = sample.width;
+      const cardH = sample.height;
       const rows = Math.ceil(letters.length / columns);
       const padding = 55;
       const titleH = 105;
@@ -1055,52 +1111,116 @@
       sheet.height = padding * 2 + titleH + rows * cardH;
       const ctx = sheet.getContext("2d");
 
-      ctx.fillStyle = "#f3f1ec";
+      ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, sheet.width, sheet.height);
       ctx.fillStyle = "#111";
       ctx.font = "bold 44px Arial, Helvetica, sans-serif";
       ctx.textAlign = "left";
       ctx.fillText("Experimental Geometric Typeface", padding, padding + 42);
       ctx.font = "22px Arial, Helvetica, sans-serif";
-      ctx.fillText(`A–Z + a–z | ${presetNames[state.resolvedPreset]} | seed ${state.seed}`, padding, padding + 78);
+      ctx.fillText(`A-Z + a-z | ${presetNames[state.resolvedPreset]} | seed ${state.seed} | ${CELL_MM} mm grid`, padding, padding + 78);
 
       letters.split("").forEach((letter, i) => {
         const temp = document.createElement("canvas");
-        temp.width = cardW;
-        temp.height = cardH;
-        drawGlyphCanvas(temp, letter, "card");
+        drawGlyphCanvas(temp, letter, true);
         const col = i % columns;
         const row = Math.floor(i / columns);
         ctx.drawImage(temp, padding + col * cardW, padding + titleH + row * cardH);
       });
-      downloadCanvas(sheet, `experimental-alphabet-${state.seed}.png`);
+      return sheet;
+    }
+
+    function downloadAlphabetSheet() {
+      downloadCanvas(buildAlphabetSheet(8), `experimental-alphabet-${state.seed}.png`);
+    }
+
+    // One-click true-size tracing sheet: render the alphabet to an image, open a
+    // print window, and size the image so every cell is exactly CELL_MM on paper.
+    // (Every pixel = 1/PX_PER_MM mm, so width-mm = pixels / PX_PER_MM.)
+    // Built with DOM APIs (no document.write) for safety.
+    function printTracingSheet() {
+      const sheet = buildAlphabetSheet(6);            // fewer columns -> bigger cards
+      const widthMm = (sheet.width / PX_PER_MM).toFixed(2);
+      const dataUrl = sheet.toDataURL("image/png");
+      const win = window.open("", "_blank");
+      if (!win) {
+        alert("Pop-up blocked. Allow pop-ups for this page, or use the Print button.");
+        return;
+      }
+      const doc = win.document;
+      doc.title = `A-Z tracing sheet ${CELL_MM} mm`;
+
+      const style = doc.createElement("style");
+      style.textContent =
+        `@page { size: A4 portrait; margin: 8mm; }` +
+        `html,body{margin:0;padding:0;background:#fff;}` +
+        `img{display:block;width:${widthMm}mm;height:auto;}` +
+        `.hint{font:12px Arial,sans-serif;color:#444;margin:0 0 6px;}` +
+        `@media print{.hint{display:none;}}`;
+      doc.head.appendChild(style);
+
+      const hint = doc.createElement("p");
+      hint.className = "hint";
+      hint.textContent = `Print at 100% scale (turn OFF "Fit to page") so each cell prints at ${CELL_MM} mm to match GridA4.`;
+      doc.body.appendChild(hint);
+
+      const img = doc.createElement("img");
+      img.alt = "A-Z and a-z tracing sheet";
+      img.onload = () => win.setTimeout(() => win.print(), 150);
+      img.src = dataUrl;
+      doc.body.appendChild(img);
+      win.focus();
     }
 
     function downloadFullSpecimen() {
       const word = document.getElementById("conferenceCanvas");
+      const sheetW = 1800;
+      const margin = 80;
+      const labelGap = 120;                       // room for the "A-Z" / "a-z" labels
+      const availW = sheetW - margin * 2 - labelGap;
+
+      // Scale the word image to fit the sheet width.
+      const wordScale = Math.min(1, (sheetW - margin * 2) / word.width);
+      const wordH = word.height * wordScale;
+
+      // Fit each 26-letter row to availW (this is the overflow fix).
+      const specCell = specimenCellFor(26, availW);
+      const rowH = 7 * specCell + 46;
+
       const sheet = document.createElement("canvas");
-      sheet.width = 1800;
-      sheet.height = 1220;
+      sheet.width = sheetW;
+      sheet.height = Math.ceil(margin * 2 + wordH + 60 + rowH * 2 + 40);
       const ctx = sheet.getContext("2d");
       ctx.fillStyle = "#f3f1ec";
       ctx.fillRect(0, 0, sheet.width, sheet.height);
-      ctx.drawImage(word, 0, 0);
+      ctx.drawImage(word, margin, margin, word.width * wordScale, wordH);
 
       ctx.fillStyle = "#111";
       ctx.font = "bold 34px Arial, Helvetica, sans-serif";
-      ctx.fillText("A–Z", 80, 805);
-      drawSpecimenLineToContext(ctx, UPPERCASE, 170, 760, 26);
-      ctx.fillText("a–z", 80, 1025);
-      drawSpecimenLineToContext(ctx, LOWERCASE, 170, 980, 26);
+      ctx.textAlign = "left";
+
+      let yy = margin + wordH + 60;
+      ctx.fillText("A-Z", margin, yy + 7 * specCell / 2);
+      drawSpecimenLineToContext(ctx, UPPERCASE, margin + labelGap, yy, specCell);
+      yy += rowH;
+      ctx.fillText("a-z", margin, yy + 7 * specCell / 2);
+      drawSpecimenLineToContext(ctx, LOWERCASE, margin + labelGap, yy, specCell);
       downloadCanvas(sheet, `full-typeface-specimen-${state.seed}.png`);
     }
 
+    // Largest cell size such that `count` glyphs (gap 0, small tracking) fit in availW.
+    function specimenCellFor(count, availW) {
+      const trk = 4;
+      const cell = (availW - count * trk) / (count * 5);
+      return Math.max(6, Math.min(CELL, cell));
+    }
+
     function drawSpecimenLineToContext(ctx, alphabet, startX, startY, cell) {
-      const gap = cell * .18;
+      const trk = 4;
       let x = startX;
       alphabet.split("").forEach(letter => {
-        drawLetter(ctx, letter, x, startY, cell, gap, { label:false, guide:false });
-        x += 5 * cell + 4 * gap + 9;
+        drawLetter(ctx, letter, x, startY, cell, 0, { label:false, guide:false });
+        x += 5 * cell + trk;
       });
     }
 
@@ -1109,8 +1229,9 @@
     document.getElementById("downloadAlphabetButton").addEventListener("click", downloadAlphabetSheet);
     document.getElementById("downloadSpecimenButton").addEventListener("click", downloadFullSpecimen);
     document.getElementById("printButton").addEventListener("click", () => window.print());
+    document.getElementById("printTracingButton").addEventListener("click", printTracingSheet);
 
-    ["conferenceInput", "presetSelect", "accentInput", "trackingInput", "strokeInput", "seedInput", "gridToggle", "upperToggle", "invertToggle"].forEach(id => {
+    ["conferenceInput", "presetSelect", "accentInput", "trackingInput", "strokeInput", "seedInput", "cellMmInput", "gridToggle", "upperToggle", "invertToggle"].forEach(id => {
       document.getElementById(id).addEventListener("input", () => renderAll(false));
       document.getElementById(id).addEventListener("change", () => renderAll(false));
     });
